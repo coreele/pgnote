@@ -12,6 +12,7 @@
 | -      | Autovacuum |                                                                     |
 | -      | FSM        | [01_fsm](../pgnote/src/backend/storage/freespace/01_fsm.md)         |
 | -      | pgvector   |                                                                     |
+| -      | List       | [list](src/backend/node/list.md)                                    |
 
 ## meta
 
