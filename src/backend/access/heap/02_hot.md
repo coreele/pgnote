@@ -119,9 +119,3 @@ HOT 时打标志、写 `pd_prune_xid`（`PageSetPrunable`），给后续页内�
 1. HOT = 同页 + 索引列 bitwise 不变 → 不插索引；旧版 `HOT_UPDATED`，新版 `HEAP_ONLY`。
 2. 索引始终指向 root；prune 把死 root 变成 `LP_REDIRECT`，从而能收回元组体且索引仍有效（细节见 [Page Prune](./03_prune.md)）。
 3. 没空间或改了索引列 → cold update，必须新索引项；VACUUM 才能回收带索引的死 lp。
-
----
-
-**相关笔记**: [Heap AM](./heap.md) · [README.HOT](./00_README.HOT.md) · [Page Prune](./03_prune.md) · [VM](./01_vm.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [Page Layout](../../storage/page/01_page_layout.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
-
-**最后更新**: 2026-08-24 | **适用版本**: PostgreSQL 15.x / 16.x / devel

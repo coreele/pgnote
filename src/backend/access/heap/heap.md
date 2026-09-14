@@ -40,7 +40,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 | **heaptoast.c**         | 元组太大则压缩/外置到 toast 表；删除时回收。insert/update 路径由 `heapam.c` 调用。                                                                     |
 | **pruneheap.c**         | 页内剪枝与 [HOT](./02_hot.md)：回收死元组、改 redirect/dead/unused。见 [Page Prune](./03_prune.md)；普通访问也可 `heap_page_prune_opt`。               |
 | **visibilitymap.c**     | 每堆页 2 bit（all-visible / all-frozen）。VACUUM 置位以便跳页；DML 破坏「全可见」时清位。见 [VM](./01_vm.md)。                                         |
-| **vacuumlazy.c**        | 并发 VACUUM：扫堆 → 收死 TID → 清索引 → 再清堆页 → 更新 VM / 截断。见 [Lazy VACUUM](./04_vacuumlazy.md)。                                              |
+| **vacuumlazy.c**        | 并发 VACUUM：扫堆 → 收死 TID → 清索引 → 再清堆页 → 更新 VM / 截断。见 [Lazy VACUUM](05_vacuumlazy.md)。                                              |
 | **rewriteheap.c**       | CLUSTER / 整表改写：在新堆重写元组，修正 update 链的 ctid。                                                                                            |
 | **syncscan.c**          | 多个 seqscan 扫同一表时尽量共用 I/O。                                                                                                                  |
 
@@ -55,7 +55,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 `handler` insert/update/delete → `heapam`（必要时 `heaptoast`）→ `hio` 选页写入 → 同一临界区清 VM → 可能 `heap_page_prune_opt`
 
 **VACUUM：**  
-`vacuumlazy` → `heapam_visibility` 判死活 → `pruneheap` 回收页空间 → 清索引死指针 → `visibilitymap_set` 标记可跳过页。见 [Lazy VACUUM](./04_vacuumlazy.md)。
+`vacuumlazy` → `heapam_visibility` 判死活 → `pruneheap` 回收页空间 → 清索引死指针 → `visibilitymap_set` 标记可跳过页。见 [Lazy VACUUM](05_vacuumlazy.md)。
 
 **CLUSTER / 表改写：**  
 `handler` → `rewriteheap`（保可见性与 ctid 链）→ 底层仍走堆写入路径
@@ -72,9 +72,3 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 | **hio / toast**             | 往哪写、怎么塞得下     |
 | **prune / vacuumlazy / VM** | 回收空间、加速后续扫描 |
 | **rewriteheap**             | 整表搬迁时保住版本链   |
-
----
-
-**相关笔记**: [VM](./01_vm.md) · [HOT](./02_hot.md) · [Page Prune](./03_prune.md) · [Lazy VACUUM](./04_vacuumlazy.md) · [README.HOT](./00_README.HOT.md) · [Tuple Lock](./00_README.tuplock.md) · [Page Layout](../../storage/page/01_page_layout.md) · [FSM](../../storage/freespace/01_fsm.md) · [MVCC Visibility](../transam/08_mvcc_visibility.md) · [trace: update](../../../traces/03_update.md)
-
-**最后更新**: 2026-08-17 | **适用版本**: PostgreSQL 15.x / 16.x / devel

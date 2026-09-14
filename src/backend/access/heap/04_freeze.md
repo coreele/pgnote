@@ -1,3 +1,5 @@
+# Freeze
+
 # Freeze（元组冻结）
 
 **概要**：XID 仅 32 位，用尽后会回绕。若页中老元组的 `xmin` 与当前 XID 的间隔逼近 2³¹，该元组会被误判为「未来事务插入」而不可见。freeze 在回绕临近前，将足够老的元组标记为**永久已提交**：此后判定可见性无需再查询 `pg_xact`（clog）。由此 `relfrozenxid` 得以推进，clog 得以截断。
@@ -6,7 +8,7 @@
 
 ---
 
-## 1. 问题：32 位 XID 会回绕
+## 1. XID wraparound
 
 每个事务被分配一个 XID，记录于元组的 `xmin` / `xmax` 字段，作为可见性判定的依据。由于 XID 仅 32 位，约 42 亿个即告耗尽，PostgreSQL 将其视为环形计数器：分配至 2³²−1 后回绕至 3，先后关系按模 2³² 的有符号差计算：
 
@@ -26,7 +28,7 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 「过去」与「未来
 
 ---
 
-## 2. 冻结的表示：置位而不改写 xmin
+## 2. `HEAP_XMIN_FROZEN`
 
 冻结并非改写数据，而是修改元组头 `infomask` 的两个位，合成「永久已提交」标记：
 
@@ -46,7 +48,7 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 「过去」与「未来
 
 ---
 
-## 3. 冻结判据：两个视界
+## 3. freeze cutoff
 
 冻结前需分别判定两个问题，各对应一个 cutoff：
 
@@ -62,18 +64,18 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 「过去」与「未来
 
 cutoff 的计算来源（`vacuum_get_cutoffs()`；默认参数见括号）：
 
-| cutoff | 计算 |
-| --- | --- |
-| `FreezeLimit` | `nextXID − vacuum_freeze_min_age`（5000 万），再 clamp ≤ `OldestXmin` |
-| `OldestXmin` | `GetOldestNonRemovableTransactionId()`：仍可能被某快照引用的最老事务 |
+| cutoff            | 计算                                                                        |
+| ----------------- | ------------------------------------------------------------------------- |
+| `FreezeLimit`     | `nextXID − vacuum_freeze_min_age`（5000 万），再 clamp ≤ `OldestXmin`          |
+| `OldestXmin`      | `GetOldestNonRemovableTransactionId()`：仍可能被某快照引用的最老事务                     |
 | `MultiXactCutoff` | `nextMXID − vacuum_multixact_freeze_min_age`（500 万），clamp ≤ `OldestMxact` |
-| `OldestMxact` | `GetOldestMultiXactId()` |
+| `OldestMxact`     | `GetOldestMultiXactId()`                                                  |
 
 防止 anti-wraparound 触发过频的 GUC 约束：`freeze_min_age ≤ autovacuum_freeze_max_age / 2`；`freeze_table_age ≤ 0.95 × autovacuum_freeze_max_age`。
 
 ---
 
-## 4. 触发路径与 aggressive 模式
+## 4. freeze time
 
 freeze 无独立命令入口，作为 lazy `VACUUM` 扫描页面的一部分在 `lazy_scan_prune()` 中执行。是否实际执行冻结取决于触发路径：
 
@@ -95,13 +97,13 @@ freeze 无独立命令入口，作为 lazy `VACUUM` 扫描页面的一部分在 
 
 ---
 
-## 5. 冻结执行：prepare 与 execute 两阶段
+## 5. freeze process
 
-冻结实现分为两阶段：prepare 可能读取 clog / multixact（代价较高），在临界区外执行；execute 改写 tuple 头并写入 WAL，在临界区内原子完成，以尽量缩短持锁时间。
+冻结实现分为两阶段
+- prepare 可能读取 clog / multixact（代价较高），在临界区外执行；
+- execute 改写 tuple 头并写入 WAL，在临界区内原子完成，以尽量缩短持锁时间。
 
-源码：判定与执行在 `access/heap/heapam.c`（PG 17 起拆出 `heapfreeze.c`），VACUUM 集成在 `vacuumlazy.c`，cutoff 计算在 `commands/vacuum.c`。
-
-### 5.1 prepare：逐元组构造冻结计划
+### prepare
 
 prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确认其存活（DEAD 元组在 prune 阶段已被移除，不会进入冻结流程），再调用 `heap_prepare_freeze_tuple()`，在内存中构造 `HeapTupleFreeze` 计划（目标 xmax / infomask / frzflags / checkflags），同时维护页级 `HeapPageFreeze` 状态。各字段的判定如下：
 
@@ -128,7 +130,7 @@ prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确
 
 处理 multi 的目的：避免旧 multi 推迟 `relminmxid` 的推进，并减少对 SLRU 的重复访问。
 
-### 5.2 decide & execute：临界区内原子执行
+### execute
 
 按页决策，满足下列任一条件即进入 freeze path：
 
@@ -145,7 +147,7 @@ OR (all_visible && all_frozen && prune 已产生 FPI)   -- 页面因 prune 已�
 
 ---
 
-## 6. WAL 记录：冻结必须持久化
+## 6. WAL
 
 冻结修改并非 hint bit，不能丢失。原因：若 `relfrozenxid` 已推进、clog 已按 `datfrozenxid` 截断，此后发生崩溃并丢失冻结记录，则元组 xmin 的真实提交状态将无从查询。因此每次冻结均写入 `XLOG_HEAP2_FREEZE_PAGE`：
 
@@ -161,7 +163,7 @@ offsets[] /* 按 plan 分组的元组偏移 */
 
 ---
 
-## 7. 收尾：relfrozenxid 推进与 VM all-frozen
+## 7. VM
 
 **NewRelfrozenXid 追踪器**：`vacrel->NewRelfrozenXid` 初始化为 `OldestXmin`（乐观上界），扫描中每遇未冻结而残留的老 XID（含 multi 成员）即回退；该值不会低于表原有的 `relfrozenxid`（即本次扫描的安全下界）。每页按 §5.2 的决策，择一提交 FreezePage* 或 NoFreezePage* 两套追踪器。收尾规则：
 
@@ -173,7 +175,7 @@ offsets[] /* 按 plan 分组的元组偏移 */
 
 ---
 
-## 8. 进阶：wraparound 防御阈值与 failsafe
+## 8. failsafe
 
 `SetTransactionIdLimit()`（`varsup.c`）以全库最老 `datfrozenxid` 为基准设置四级阈值：
 
@@ -188,25 +190,7 @@ offsets[] /* 按 plan 分组的元组偏移 */
 
 ---
 
-## 9. 核心函数速查
-
-| 函数 | 职责 |
-| --- | --- |
-| `vacuum_get_cutoffs()` | 计算各 cutoff、判定 aggressive（`vacuum.c`） |
-| `heap_tuple_should_freeze()` | 检测页内是否存在 < `FreezeLimit` 的 XID（即是否必须冻结）；维护 NoFreeze 追踪器 |
-| `heap_prepare_freeze_tuple()` | 构造单元组冻结计划（可读取 multixact / 产生新 multi） |
-| `FreezeMultiXactId()` | multi xmax 的四种处置 |
-| `lazy_scan_prune()` | prune + 逐元组 prepare + 页级决策 + 执行 + VM 置位 |
-| `lazy_scan_noprune()` | 无 cleanup lock 时的降级扫描；aggressive 下可要求重试 |
-| `heap_freeze_execute_prepared()` | 临界区内原子执行全页计划并写 `XLOG_HEAP2_FREEZE_PAGE` |
-| `heap_execute_freeze_tuple()` | 按计划改写单个 tuple 头 |
-| `heap_freeze_tuple()` | prepare + execute 一步完成、不写 WAL（CLUSTER / rewriteheap 使用） |
-| `heap_xlog_freeze_page()` | redo |
-| `SetTransactionIdLimit()` | 防御阈值计算（`varsup.c`） |
-
----
-
-## 10. 流程概览
+## 10. call stack
 
 ```text
 ExecVacuum | vacuum
@@ -231,9 +215,9 @@ ExecVacuum | vacuum
 
 ---
 
-## 11. 可复现实验（PG 16.11 实测）
+## 11. case
 
-### 11.1 基础：观察 infomask 变化、relfrozenxid 推进与 VM 标记
+- 基础：观察 infomask 变化、relfrozenxid 推进与 VM 标记
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS pageinspect;
@@ -263,7 +247,7 @@ SELECT relfrozenxid, age(relfrozenxid) FROM pg_class WHERE relname = 'test_freez
 SELECT blkno, all_visible, all_frozen FROM pg_visibility_map('test_freeze');
 ```
 
-### 11.2 lock-only xmax 被冻结清除
+- lock-only xmax 被冻结清除
 
 ```sql
 BEGIN; SELECT * FROM test_freeze WHERE id = 1 FOR SHARE; COMMIT;
@@ -281,7 +265,7 @@ FROM heap_page_items(get_raw_page('test_freeze', 0));
 
 （若要观察真正的 multi xmax，需两个并发会话先后执行 `FOR SHARE` / `FOR UPDATE` 后提交。）
 
-### 11.3 aggressive 模式与 VACUUM VERBOSE 输出
+- aggressive 模式与 VACUUM VERBOSE 输出
 
 ```sql
 SET vacuum_freeze_table_age = 0;
@@ -291,7 +275,7 @@ VACUUM VERBOSE test_freeze;
 -- frozen: 0 pages ... had 0 tuples frozen   <- 已冻结的表再次 FREEZE，通常无元组可冻
 ```
 
-### 11.4 pg_waldump：观察 FREEZE_PAGE 记录
+- pg_waldump：观察 FREEZE_PAGE 记录
 
 ```sql
 SELECT pg_current_wal_lsn();          -- 记录起点
@@ -308,11 +292,3 @@ rmgr: Heap2  ... desc: FREEZE_PAGE snapshotConflictHorizon: 14661, nplans: 1,
 ```
 
 HOT 新版本（offset 4）由一条**去重后的 plan** 冻结：`infomask 11008 = 0x2B00`（`HEAP_XMIN_FROZEN | HEAP_XMAX_INVALID | HEAP_UPDATED`）。
-
----
-
-## 12. 相关笔记
-
-[XID](../src/backend/access/transam/05_xid.md) · [CLOG](../src/backend/access/transam/09_clog.md) · [MVCC Visibility](../src/backend/access/transam/08_mvcc_visibility.md) · [Page Prune](../src/backend/access/heap/03_prune.md) · [Lazy VACUUM](../src/backend/access/heap/04_vacuumlazy.md) · [VM](../src/backend/access/heap/01_vm.md) · [Heap AM](../src/backend/access/heap/heap.md) · [trace: VM](../src/traces/05_vm.md)
-
-**最后更新**: 2026-09-02 | **适用版本**: PostgreSQL 16.x（对照 `REL_16_11` 源码）

@@ -7,7 +7,7 @@
 | -      | VM         | [01_vm](../pgnote/src/backend/access/heap/01_vm.md)                 |
 | -      | HOT        | [02_hot](../pgnote/src/backend/access/heap/02_hot.md)               |
 | -      | Prune      | [03_prune](../pgnote/src/backend/access/heap/03_prune.md)           |
-| -      | VACUUM     | [04_vacuumlazy](../pgnote/src/backend/access/heap/04_vacuumlazy.md) |
+| -      | VACUUM     | [05_vacuumlazy](src/backend/access/heap/05_vacuumlazy.md) |
 | -      | vacuum     | [vacuumlazy](doing/vacuumlazy.md)                                   |
 | -      | Autovacuum |                                                                     |
 | -      | FSM        | [01_fsm](../pgnote/src/backend/storage/freespace/01_fsm.md)         |
@@ -148,7 +148,7 @@
 | 2      | VM                                  | ok    |       |        | [01_vm](src/backend/access/heap/01_vm.md)                 |
 | 3      | HOT                                 | ok    | ok    |        | [02_hot](src/backend/access/heap/02_hot.md)               |
 | 4      | Heap Prune                          |       |       |        | [03_prune](src/backend/access/heap/03_prune.md)           |
-| 5      | Lazy VACUUM                         | ok    |       |        | [04_vacuumlazy](src/backend/access/heap/04_vacuumlazy.md) |
+| 5      | Lazy VACUUM                         | ok    |       |        | [05_vacuumlazy](src/backend/access/heap/05_vacuumlazy.md) |
 | 6      | index types                         |       |       |        |                                                           |
 | 7      | nbtree                              | ok    | ok    |        | [nbtree](src/backend/access/nbtree/nbtree.md)             |
 | 8      | Table AM / Index AM API             |       |       |        |                                                           |
@@ -207,3 +207,8 @@
 | 1      | Parallel Query        |       |       |        |       |
 | 2      | JIT Compilation       |       |       |        |       |
 | 3      | FDW / Extension Hooks |       |       |        |       |
+
+## reference
+
+
+- http://pgint.vonng.com/
