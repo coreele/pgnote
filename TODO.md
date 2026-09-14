@@ -1,5 +1,19 @@
 # TODO
 
+**DOING**:
+
+| number | topic    | where                                                               |
+| ------ | -------- | ------------------------------------------------------------------- |
+| -      | VM       | [01_vm](../pgnote/src/backend/access/heap/01_vm.md)                 |
+| -      | HOT      | [02_hot](../pgnote/src/backend/access/heap/02_hot.md)               |
+| -      | Prune    | [03_prune](../pgnote/src/backend/access/heap/03_prune.md)           |
+| -      | VACUUM   | [04_vacuumlazy](../pgnote/src/backend/access/heap/04_vacuumlazy.md) |
+| -      | vacuum   | [vacuumlazy](doing/vacuumlazy.md)                                   |
+| -      | FSM      | [01_fsm](../pgnote/src/backend/storage/freespace/01_fsm.md)         |
+| -      | List     | [list](src/backend/node/list.md)                                    |
+| -      | pgvector |                                                                     |
+| -      | List     | [list](src/backend/node/list.md)                                    |
+
 ## meta
 
 | number | topic           | study | share | review | where                                |
@@ -174,6 +188,15 @@
 | ------ | ----------- | ----- | ----- | ------ | --------------------------------------------- |
 | 1      | pageinspect | ok    | ok    |        | [01_pageinspect](src/tools/01_pageinspect.md) |
 
+## lib
+
+| number | topic | study | share | review | where                            |
+| ------ | ----- | ----- | ----- | ------ | -------------------------------- |
+| 1      | List  | ok    | ok    |        | [list](src/backend/node/list.md) |
+|        |       |       |       |        |                                  |
+|        |       |       |       |        |                                  |
+|        |       |       |       |        |                                  |
+
 ## traces
 
 | number | topic          | study | share | review | where                                                |
@@ -195,6 +218,5 @@
 | 3      | FDW / Extension Hooks |       |       |        |       |
 
 ## reference
-
 
 - http://pgint.vonng.com/
