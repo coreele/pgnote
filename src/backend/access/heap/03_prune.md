@@ -1,10 +1,10 @@
-# Page Prune（页内修剪）
+# Page Prune
 
 ## 1. 定义
 
 **Page prune**：在**单个 heap 页内部**回收已死元组、缩短 HOT 链、整理碎片。**不跨页，不碰索引**。
 
-与 lazy `VACUUM` 共用 `heap_page_prune()`，但 opportunistic 路径条件更严、不做索引清理。对照：[HOT](./02_hot.md) · [Lazy VACUUM](05_vacuumlazy.md) · [README.HOT](./00_README.HOT.md)。
+与 lazy `VACUUM` 共用 `heap_page_prune()`，但 opportunistic 路径条件更严、不做索引清理。
 
 源码：`src/backend/access/heap/pruneheap.c`。
 
@@ -14,31 +14,13 @@
 | **VACUUM prune** | `heap_page_prune()`         | 已持 cleanup lock                       | 每页必做；用 `OldestXmin`   |
 | **WAL replay**   | `heap_page_prune_execute()` | redo 路径                               | 应用 `XLOG_HEAP2_PRUNE` |
 
-开销阶梯：page prune ≪ lazy `VACUUM` ≪ `VACUUM FULL` ≪ CLUSTER。
+## 2. 触发路径
 
----
-
-## 2. 两条触发路径
-
-### 2.1 按需：`heap_page_prune_opt`
+### 2.1. Optionally
 
 **在读路径**访问某页时调用。
 
-> UPDATE/DELETE 若先靠 Seq/Index/Bitmap **读到**该页，会走同一条 `heap_page_prune_opt`。
-
-Recovery / standby 上直接返回，不主动 prune（主库 WAL 会带 `XLOG_HEAP2_PRUNE`）。
-
-### 2.2 VACUUM：`heap_page_prune`
-
-`vacuumlazy.c` 扫描每页时**直接**调用，已持 cleanup lock，用 `vacrel->cutoffs.OldestXmin` 判死，**不依赖**下面的空闲空间启发式。
-
-之后 VACUUM 还会：清索引死项、`LP_DEAD` → `LP_UNUSED`、更新 VM / FSM 等，这些 opportunistic prune **不做**。
-
----
-
-## 3. 按需 prune 的执行条件
-
-`heap_page_prune_opt()` 被调用后，**全部满足**才真正 `heap_page_prune()`：
+按需 prune 的执行条件:
 
 ```text
 1. !RecoveryInProgress()
@@ -55,11 +37,11 @@ Recovery / standby 上直接返回，不主动 prune（主库 WAL 会带 `XLOG_H
 
 拿不到 cleanup lock → **直接跳过**，不阻塞读/写。
 
----
+### 2.2. VACUUM
 
-## 4. 页头 hint 字段
+`vacuumlazy.c` 扫描每页时**直接**调用，已持 cleanup lock，用 `vacrel->cutoffs.OldestXmin` 判断是否可清理。
 
-### `pd_prune_xid`
+## 4. pd_prune_xid
 
 页上**最早**「将来可 prune」的 XID。UPDATE/DELETE 在旧页留下 dead 候选时设置：
 
@@ -71,9 +53,7 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 - 事务 abort → 后续 prune 是 no-op，hint 会被清掉
 - `pd_prune_xid == InvalidTransactionId` → `heap_page_prune_opt` 立刻返回
 
----
-
-## 5. prune 做什么
+## 5. Process
 
 `heap_page_prune()` 流程：
 
@@ -86,62 +66,19 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 4. 更新 `pd_prune_xid`、`PageClearFull`
 5. 写 WAL：`XLOG_HEAP2_PRUNE`
 
----
+## 6. Function
 
-## 6. 核心函数
-
-| 函数                        | 作用                                                 |
-| --------------------------- | ---------------------------------------------------- |
+| 函数                          | 作用                                     |
+| --------------------------- | -------------------------------------- |
 | `heap_page_prune_opt()`     | 检查 hint + 视界 + 空闲启发式；非阻塞拿 cleanup lock |
-| `heap_page_prune()`         | 扫描页、规划 HOT 链变更、写 WAL                      |
-| `heap_page_prune_execute()` | 应用 redirect/dead/unused + 碎片整理                 |
-| `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                             |
-| `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                        |
+| `heap_page_prune()`         | 扫描页、规划 HOT 链变更、写 WAL                   |
+| `heap_page_prune_execute()` | 应用 redirect/dead/unused + 碎片整理         |
+| `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                     |
+| `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                   |
 
----
+## 9. Case
 
-## 7. 与 VACUUM 的分工
-
-|           | opportunistic prune                      | lazy VACUUM        |
-| --------- | ---------------------------------------- | ------------------ |
-| 触发      | 扫描读页（含 UPDATE/DELETE 定位元组）    | `VACUUM` 命令      |
-| 视界      | `GlobalVisTest` / `InvalidTransactionId` | `OldestXmin`       |
-| 空间条件  | 页快满才做                               | 无                 |
-| 索引      | 不碰                                     | 清 dead 索引项     |
-| `LP_DEAD` | 可新设                                   | 后续改 `LP_UNUSED` |
-| FSM       | 不更新                                   | 更新               |
-| VM        | 不置位                                   | 可置 all-visible   |
-
-一句话：**prune 管页内；VACUUM 管索引 + 全局一致性。**
-
----
-
-## 8. 流程概览
-
-```text
-定位旧元组（Seq / Index / Bitmap）
-  └─ heap_page_prune_opt()
-
-heap_delete（old page，exclusive lock）
-  └─ PageSetPrunable
-
-heap_update（old page，exclusive lock）
-  ├─ newtupsize > pagefree
-  │    RelationGetBufferForTuple
-  │    PageSetFull(old page)
-  ├─ else 同页放入（HOT 或 cold）
-  └─ PageSetPrunable(old page)
-
-VACUUM 扫描
-  ├─ heap_page_prune(OldestXmin)
-  └─ 清索引 → [LP_DEAD → LP_UNUSED] → VM / FSM ...
-```
-
----
-
-## 9. 可复现实验
-
-### 9.1 扫描驱动（页快满 + dead tuple 已可移除）
+### 9.1 `heap_page_prune_opt`
 
 ```sql
 DROP TABLE IF EXISTS test_prune;
@@ -163,7 +100,7 @@ SELECT count(*) FROM test_prune;
 
 页仍很空时，`heap_page_prune_opt` 通常**只检查 hint、不 prune**；要强制观察可再 UPDATE 把页填满，或跑 `VACUUM`。
 
-### 9.2 VACUUM 驱动
+### 9.2 VACUUM
 
 ```sql
 DROP TABLE IF EXISTS test_prune;

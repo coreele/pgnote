@@ -13,7 +13,7 @@
 
 `t_infomask` 上的 `HEAP_UPDATED`（`0x2000`）表示「这是 UPDATE 产生的新版本」，HOT / cold 都有。
 
-源码：`heapam.c`（`heap_update`）、`htup_details.h`。页内缩短链、回收死版本见 [Page Prune](./03_prune.md)。上游说明：[README.HOT](./00_README.HOT.md)。
+源码：`heapam.c`（`heap_update`）、`htup_details.h`。页内缩短链、回收死版本见 [Page Prune](./03_prune.md)。
 
 ```sql
 DROP TABLE IF EXISTS tb;
