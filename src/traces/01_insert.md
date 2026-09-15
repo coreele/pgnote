@@ -267,9 +267,3 @@ rmgr: Heap        len (rec/tot):     59/    59, tx:       1608, lsn: 0/102BEB10,
 rmgr: Transaction len (rec/tot):     34/    34, tx:       1608, lsn: 0/102BEB50, prev 0/102BEB10, desc: COMMIT 2026-07-15 21:15:04.305921 CST
 rmgr: Standby     len (rec/tot):     50/    50, tx:          0, lsn: 0/102BEB78, prev 0/102BEB50, desc: RUNNING_XACTS nextXid 1609 latestCompletedXid 1608 oldestRunningXid 1609
 ```
-
-## 延伸阅读
-
-- [WAL 原理图](../backend/access/transam/assets/draw_wal_principle.md)
-- [WAL Recovery](../backend/access/transam/14_wal_recovery.md)
-- [事务概览](../backend/access/transam/01_overview.md)

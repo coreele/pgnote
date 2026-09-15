@@ -91,9 +91,3 @@ VACUUM / page prune 回收空间后应更新 FSM，否则空闲「看不见」�
 1. FSM = 每数据页一字节空闲类别 + 页内/跨页 **max 树**，加速「找够大的页」。
 2. 粒度与并发使结果不可盲信；选页后必须在堆页上复核。
 3. 扩展与 VACUUM 都要维护 FSM，否则插入只见「假满」。
-
----
-
-**相关笔记**: [FSM README](./00_readme.md) · [Visibility Map](../../access/heap/06_vm.md) · [Heap AM](../../access/heap/heap.md) · [Page Layout](../page/01_page_layout.md) · [insert](../../../traces/01_insert.md)
-
-**最后更新**: 2026-08-03 | **适用版本**: PostgreSQL 15.x / 16.x / devel

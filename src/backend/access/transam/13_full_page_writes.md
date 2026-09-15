@@ -207,9 +207,3 @@ else
 2. **What**：checkpoint 后每页第一次修改附带 Full Page Image。
 3. **How**：`XLogRecordAssemble` 用 `doPageWrites` + `page_lsn <= RedoRecPtr` 判定；redo 走 `RestoreBlockImage`。
 4. **Trade-off**：WAL 变大 ↔ 崩溃后页可重建；拉长 checkpoint 或压缩是常见降本手段。
-
----
-
-**相关笔记**: [WAL Record Structure & Insertion](./10_wal_record_insert.md) · [WAL Recovery](./14_wal_recovery.md) · [Base Backup / runningBackups](./16_base_backup.md) · [insert 链路](../../../traces/01_insert.md)
-
-**最后更新**: 2026-07-16 | **适用版本**: PostgreSQL 15.x / 16.x / devel

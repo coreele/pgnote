@@ -168,9 +168,3 @@ Crash recovery 读到本地可提供的 WAL 末尾（通常受 Flush 边界约�
 2. Why：崩溃后共享缓冲与未刷脏页不可信；可依赖的是 WAL + 页 LSN / FPI。
 3. How：`StartupXLOG` → `PerformWalRecovery` → ReadRecord → `rm_redo` → `BLK_RESTORED` / `DONE` / `NEEDS_REDO`。
 4. 范围外：备库持续 apply、archive/PITR 目标点、base backup 引导。
-
----
-
-**相关笔记**: [WAL Recovery（故障域）](./14_wal_recovery.md) · [Full Page Writes](./13_full_page_writes.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Mini-Transaction](./12_mini_transaction.md) · [Base Backup](./16_base_backup.md) · [Streaming Replication](../../replication/01_streaming_replication.md) · [trace: crash recovery](../../../traces/04_crash_recovery.md)
-
-**最后更新**: 2026-07-20 | **适用版本**: PostgreSQL 15.x / 16.x / devel

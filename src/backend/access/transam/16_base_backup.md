@@ -131,10 +131,3 @@ SELECT * FROM pg_backup_stop(true);
 | 和 `full_page_writes`？ | 或关系：GUC 开 **或** 备份中，都要拍 FPI                  |
 | 为何对照 FPW？             | 同一套 `needs_backup` / FPI；动机从「本机半写」扩到「备份副本半写」 |
 | 本稿不含？                 | 流复制位点持续 apply、slot、增量 base backup 报文细节       |
-
-
----
-
-**相关笔记**: [Full Page Writes](./13_full_page_writes.md) · [Crash Recovery Redo](./15_crash_recovery_redo.md) · [Streaming Replication & Log Decoding](../../replication/01_streaming_replication.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [WAL Recovery](./14_wal_recovery.md)
-
-**最后更新**: 2026-07-21 | **适用版本**: PostgreSQL 15.x / 16.x / devel

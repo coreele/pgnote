@@ -75,7 +75,3 @@ explain select * from tb where a in (5000, 8000);
 
 `OR` 两个等值：两次 Bitmap Index Scan，再 `BitmapOr` + Bitmap Heap Scan。  
 `IN` / `= ANY`：收成一个 `ScalarArrayOpExpr`，B-Tree **一次** Index Scan 内多键下跳（skip array keys），不必拆成 Bitmap。
-
----
-
-**相关笔记**: [nbtree](./nbtree.md) · [Page](./02_page.md) · [Code](./03_code.md) · [VM](../heap/06_vm.md) · [trace: VM](../../../traces/05_vm.md)

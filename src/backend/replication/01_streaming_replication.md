@@ -152,9 +152,3 @@ advance slot confirmed_flush
 | 逻辑解码解决什么   | 从物理 WAL 抽出逻辑变更流                     |
 | 为何常和 slot 一起 | 钉住 WAL，避免解码所需段被删                  |
 | 本稿不含           | slot 生命周期、timeline history、级联复制细节（→ [02](./02_replication_slot_timeline.md)） |
-
----
-
-**相关笔记**: [Replication Slot & Timeline](./02_replication_slot_timeline.md) · [WAL Recovery](../access/transam/14_wal_recovery.md) · [Crash Recovery Redo](../access/transam/15_crash_recovery_redo.md) · [Base Backup](../access/transam/16_base_backup.md) · [Full Page Writes](../access/transam/13_full_page_writes.md)
-
-**最后更新**: 2026-07-21 | **适用版本**: PostgreSQL 15.x / 16.x / devel

@@ -4,7 +4,7 @@
 
 **概要**：XID 仅 32 位，用尽后会回绕。若页中老元组的 `xmin` 与当前 XID 的间隔逼近 2³¹，该元组会被误判为「未来事务插入」而不可见。freeze 在回绕临近前，将足够老的元组标记为**永久已提交**：此后判定可见性无需再查询 `pg_xact`（clog）。由此 `relfrozenxid` 得以推进，clog 得以截断。
 
-**阅读建议**：首次阅读 §1–§4 建立整体认识，再运行 §11.1 的实验观察 infomask 位变化与 `relfrozenxid` 推进。§5–§7 为实现细节（两阶段处理、WAL、追踪器）。§8–§10 分别给出防御阈值、核心函数与流程速查，可按需查阅。相关笔记见 §12。
+**阅读建议**：首次阅读 §1–§4 建立整体认识，再运行 §11.1 的实验观察 infomask 位变化与 `relfrozenxid` 推进。§5–§7 为实现细节（两阶段处理、WAL、追踪器）。§8、§10–§11 分别给出防御阈值、核心函数与流程速查，可按需查阅。
 
 ---
 
@@ -109,7 +109,7 @@ prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确
 
 | 字段 | 冻结条件 | 动作 |
 | --- | --- | --- |
-| `xmin` | `< OldestXmin` | `infomask |= HEAP_XMIN_FROZEN`；执行时复核 committed |
+| `xmin` | `< OldestXmin` | `infomask \|= HEAP_XMIN_FROZEN`；执行时复核 committed |
 | `xmax`（普通） | `< OldestXmin` | 清空 xmax、置 `HEAP_XMAX_INVALID`；非 lock-only 则复核 aborted |
 | `xmax`（multi） | `FreezeMultiXactId()` | 四种处理结果，见下 |
 | `xvac` | 存在即冻结 | 写入 `FrozenTransactionId` / Invalid |
@@ -171,7 +171,7 @@ offsets[] /* 按 plan 分组的元组偏移 */
 - **非 aggressive**：可推进任意幅度，也可不推进；
 - `vac_update_relstats()` 将结果写回 `pg_class.relfrozenxid` / `relminmxid`；全库各数据库 `datfrozenxid` 的最小值驱动 `vac_truncate_clog()`。
 
-**VM all-frozen**：置位条件为「页面执行 freeze path、`all_visible` 与 `all_frozen` 均成立、且无 LP_DEAD」。`lazy_scan_heap` 持堆页锁设置 `PD_ALL_VISIBLE` 并调用 `visibilitymap_set`（WAL：`log_heap_visible`）。DML / tuple lock 破坏页内状态时相应清除标记（见 [VM](../src/backend/access/heap/01_vm.md)）。收益：all-frozen 页不再包含 < `FreezeLimit` 的 XID，aggressive VACUUM 亦可跳过，后续无需重复冻结。
+**VM all-frozen**：置位条件为「页面执行 freeze path、`all_visible` 与 `all_frozen` 均成立、且无 LP_DEAD」。`lazy_scan_heap` 持堆页锁设置 `PD_ALL_VISIBLE` 并调用 `visibilitymap_set`（WAL：`log_heap_visible`）。DML / tuple lock 破坏页内状态时相应清除标记（见 [VM](./06_vm.md)）。收益：all-frozen 页不再包含 < `FreezeLimit` 的 XID，aggressive VACUUM 亦可跳过，后续无需重复冻结。
 
 ---
 

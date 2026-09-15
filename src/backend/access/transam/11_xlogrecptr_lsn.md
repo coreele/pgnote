@@ -163,9 +163,3 @@ pg_waldump -s <insert_lsn> -n 3
 1. **What**：`XLogRecPtr` = WAL 上的 64 位位置；对外常叫 LSN。
 2. **Why**：同一刻度串联 WAL 链、页版本、恢复起点与复制位点。
 3. **How**：改页 → `XLogInsert` 得 EndRecPtr → `PageSetLSN`；恢复 / FPW 用 `<=` 比较页 LSN 与记录 / redo 位置。
-
----
-
-**相关笔记**: [Full Page Writes](./13_full_page_writes.md) · [WAL Record Structure & Insertion](./10_wal_record_insert.md) · [insert 链路](../../../traces/01_insert.md)
-
-**最后更新**: 2026-07-16 | **适用版本**: PostgreSQL 15.x / 16.x / devel

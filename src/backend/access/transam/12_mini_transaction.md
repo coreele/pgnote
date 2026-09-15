@@ -97,9 +97,3 @@ MTR-2  父页插 downlink，清除 incomplete flag
 | split 语义    | `src/backend/access/nbtree/README`；`nbtxlog.c` / `_bt_split` |
 
 `_bt_split` / `XLOG_BTREE_SPLIT` 的逐页字段与实验对照，见 nbtree 写路径笔记。
-
----
-
-**相关笔记**: [WAL Record Structure & Insertion](./10_wal_record_insert.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Full Page Writes](./13_full_page_writes.md) · [nbtree README](../nbtree/00_readme.md) · [insert 链路](../../../traces/01_insert.md)
-
-**最后更新**: 2026-08-17 | **适用版本**: PostgreSQL 15.x / 16.x / devel

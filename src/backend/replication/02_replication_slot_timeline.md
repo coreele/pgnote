@@ -193,9 +193,3 @@ drop / 失效  →  释放保留；max_slot_wal_keep_size 等可令槽 invalid
 1. **Slot**：主库上的持久消费者预订 → 保留 WAL（逻辑再加 catalog）→ 支撑断连续传与解码。
 2. **Timeline**：WAL 历史的分支 ID + history → 升主/PITR 后仍能找到正确段。
 3. **合起来**：流复制日常靠 slot 保段；拓扑变更靠 timeline 保「跟对历史」。
-
----
-
-**相关笔记**: [Streaming Replication & Log Decoding](./01_streaming_replication.md) · [README（walreceiver/walsender IPC）](./00_readme.md) · [Crash Recovery Redo](../access/transam/15_crash_recovery_redo.md) · [Base Backup](../access/transam/16_base_backup.md) · [XLogRecPtr (LSN)](../access/transam/11_xlogrecptr_lsn.md) · [WAL Recovery](../access/transam/14_wal_recovery.md)
-
-**最后更新**: 2026-07-30 | **适用版本**: PostgreSQL 15.x / 16.x / devel

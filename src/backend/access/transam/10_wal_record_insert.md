@@ -189,9 +189,3 @@ XLogInsert(RM_HEAP_ID, XLOG_HEAP_INSERT);
 1. 插入路径 = 注册（多链）+ 组装（按 block 再 Main）+ 写入 WAL。  
 2. 三类登记：`RegisterBuffer`（页）、`RegisterBufData`（页附属 redo 数据）、`RegisterData`（记录级 Main Data）。  
 3. 指针链表 + 对象池降低拷贝与分配；FPI 与 BufData 的取舍在组装阶段决定。
-
----
-
-**相关笔记**: [Full Page Writes](./13_full_page_writes.md) · [XLogRecPtr (LSN)](./11_xlogrecptr_lsn.md) · [Mini-Transaction](./12_mini_transaction.md) · [Crash Recovery Redo](./15_crash_recovery_redo.md) · [insert 链路](../../../traces/01_insert.md)
-
-**最后更新**: 2026-08-03 | **适用版本**: PostgreSQL 15.x / 16.x / devel

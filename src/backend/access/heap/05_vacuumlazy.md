@@ -45,7 +45,7 @@ WHY: 为什么必须按照 `heap -> index -> heap` 的顺序处理，而不是�
 
 VACUUM 不以当前会话快照为准，而要求元组对**所有仍可能引用它的快照**均不可见。
 
-回收地平线由 ProcArray 计算：`ComputeXidHorizons` / `GetOldestXmin`（见 [transam README](../../src/backend/access/transam/00_readme.md)）：
+回收地平线由 ProcArray 计算：`ComputeXidHorizons` / `GetOldestXmin`（见 [transam README](../transam/00_readme.md)）：
 
 - 已提交的 `xmax` **严格小于** `OldestXmin` → 可回收。
 - 未结束事务、复制槽、预备事务会推迟该地平线，扫描后仍无法回收。
@@ -64,7 +64,7 @@ typedef enum
 } HTSV_Result;
 ```
 
-## 4. [VM](vm.md)
+## 4. VM
 
 ```
 lazy_scan_skip
