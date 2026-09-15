@@ -13,10 +13,10 @@ PG 9.0 起 `VACUUM FULL` 不再在原文件内搬元组，而是调用 `cluster_
 
 `VACUUM FULL` 和 `CLUSTER` 区别:
 
-- `VACUUM FULL`：`vacuum_rel` 在 `VACOPT_FULL` 时调用 `cluster_rel`（不走 `heap_vacuum_rel`），按旧堆页顺序复制，不要求索引；目标是收缩膨胀。
-- `CLUSTER tb` / `CLUSTER tb USING idx`：按指定索引（或 `pg_index.indisclustered` 记录的上次聚簇索引）顺序复制，使堆物理顺序接近该索引，Index Scan 更易顺序读盘；收缩是副作用。无可用索引时 `CLUSTER` 不能执行。
+- `VACUUM FULL`：`vacuum_rel` 在 `VACOPT_FULL` 时调用 `cluster_rel`（不走 `heap_vacuum_rel`），按旧堆页顺序复制，不要求索引；**目标是收缩膨胀**。
+- `CLUSTER tb` / `CLUSTER tb USING idx`：按指定索引（或 `pg_index.indisclustered` 记录的上次聚簇索引）顺序复制，**使堆物理顺序接近该索引**，Index Scan 更易顺序读盘；收缩是副作用。**无可用索引时 `CLUSTER` 不能执行**。
 
-二者均持 `AccessExclusiveLock`，阻塞全部读写。见 [Lock Overview](../../src/backend/storage/lmgr/01_overview.md)。
+二者均持 `AccessExclusiveLock`，阻塞全部读写。
 
 `ShareUpdateExclusiveLock` 与 `RowExclusiveLock` 不冲突，SELECT / INSERT / UPDATE / DELETE 可与 lazy `VACUUM` 并发；与另一 `VACUUM` 或 `CREATE INDEX CONCURRENTLY` 冲突。
 

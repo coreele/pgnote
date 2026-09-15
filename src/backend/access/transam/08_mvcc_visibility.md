@@ -39,8 +39,8 @@ PostgreSQL 堆表（Heap Table）的元组管理展现了极致的**逻辑简约
 - 提示位优化：通过 `HEAP_XMIN_COMMITTED`/`HEAP_XMAX_INVALID` 等提示位缓存事务状态，避免重复查询事务日志，提升性能。
 - 事务 ID 生命周期：每个元组的 XMIN/XMAX 都对应事务的完整生命周期（活跃、提交、终止），函数会根据其状态逐步校验。
 
-堆页「对所有快照都可见」被收成 VM 的 all-visible，见 [Visibility Map](../heap/01_vm.md)。
+堆页「对所有快照都可见」被收成 VM 的 all-visible，见 [Visibility Map](../heap/06_vm.md)。
 
 ---
 
-**相关笔记**: [Snapshot](./07_mvcc_snapshot.md) · [CLOG](./09_clog.md) · [Heap AM](../heap/heap.md) · [VM](../heap/01_vm.md)
+**相关笔记**: [Snapshot](./07_mvcc_snapshot.md) · [CLOG](./09_clog.md) · [Heap AM](../heap/heap.md) · [VM](../heap/06_vm.md)

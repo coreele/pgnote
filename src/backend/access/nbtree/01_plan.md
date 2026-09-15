@@ -78,4 +78,4 @@ explain select * from tb where a in (5000, 8000);
 
 ---
 
-**相关笔记**: [nbtree](./nbtree.md) · [Page](./02_page.md) · [Code](./03_code.md) · [VM](../heap/01_vm.md) · [trace: VM](../../../traces/05_vm.md)
+**相关笔记**: [nbtree](./nbtree.md) · [Page](./02_page.md) · [Code](./03_code.md) · [VM](../heap/06_vm.md) · [trace: VM](../../../traces/05_vm.md)

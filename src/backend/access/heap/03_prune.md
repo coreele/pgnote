@@ -203,6 +203,6 @@ ExecVacuum | vacuum
 
 ## 10. 相关笔记
 
-[HOT](./02_hot.md) · [Lazy VACUUM](05_vacuumlazy.md) · [VM](./01_vm.md) · [heap.md](./heap.md) · [Page Layout](../../storage/page/01_page_layout.md) · [trace: update](../../../traces/03_update.md)
+[HOT](./02_hot.md) · [Lazy VACUUM](05_vacuumlazy.md) · [VM](06_vm.md) · [heap.md](./heap.md) · [Page Layout](../../storage/page/01_page_layout.md) · [trace: update](../../../traces/03_update.md)
 
 **最后更新**: 2026-08-23 | **适用版本**: PostgreSQL 16.x（对照 `REL_16_11` 源码）

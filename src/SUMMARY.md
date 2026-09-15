@@ -46,7 +46,7 @@
 - [access](./backend/access/access.md)
   - [heap](./backend/access/heap/heap.md)
     - [README.HOT](./backend/access/heap/00_README.HOT.md)
-    - [Visibility Map](./backend/access/heap/01_vm.md)
+    - [Visibility Map](backend/access/heap/06_vm.md)
     - [HOT](./backend/access/heap/02_hot.md)
     - [Page Prune](./backend/access/heap/03_prune.md)
     - [Tuple Lock](./backend/access/heap/00_README.tuplock.md)

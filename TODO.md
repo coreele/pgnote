@@ -1,19 +1,5 @@
 # TODO
 
-**DOING**:
-
-| number | topic      | where                                                               |
-| ------ | ---------- | ------------------------------------------------------------------- |
-| -      | VM         | [01_vm](../pgnote/src/backend/access/heap/01_vm.md)                 |
-| -      | HOT        | [02_hot](../pgnote/src/backend/access/heap/02_hot.md)               |
-| -      | Prune      | [03_prune](../pgnote/src/backend/access/heap/03_prune.md)           |
-| -      | VACUUM     | [05_vacuumlazy](src/backend/access/heap/05_vacuumlazy.md) |
-| -      | vacuum     | [vacuumlazy](doing/vacuumlazy.md)                                   |
-| -      | Autovacuum |                                                                     |
-| -      | FSM        | [01_fsm](../pgnote/src/backend/storage/freespace/01_fsm.md)         |
-| -      | pgvector   |                                                                     |
-| -      | List       | [list](src/backend/node/list.md)                                    |
-
 ## meta
 
 | number | topic           | study | share | review | where                                |
@@ -145,9 +131,9 @@
 | number | topic                               | study | share | review | where                                                     |
 | ------ | ----------------------------------- | ----- | ----- | ------ | --------------------------------------------------------- |
 | 1      | Heap AM Overview                    |       |       |        | [heap](src/backend/access/heap/heap.md)                   |
-| 2      | VM                                  | ok    |       |        | [01_vm](src/backend/access/heap/01_vm.md)                 |
+| 2      | VM                                  | ok    |       |        | [06_vm](src/backend/access/heap/06_vm.md)                 |
 | 3      | HOT                                 | ok    | ok    |        | [02_hot](src/backend/access/heap/02_hot.md)               |
-| 4      | Heap Prune                          |       |       |        | [03_prune](src/backend/access/heap/03_prune.md)           |
+| 4      | Heap Prune                          | ok    | ok    |        | [03_prune](src/backend/access/heap/03_prune.md)           |
 | 5      | Lazy VACUUM                         | ok    |       |        | [05_vacuumlazy](src/backend/access/heap/05_vacuumlazy.md) |
 | 6      | index types                         |       |       |        |                                                           |
 | 7      | nbtree                              | ok    | ok    |        | [nbtree](src/backend/access/nbtree/nbtree.md)             |

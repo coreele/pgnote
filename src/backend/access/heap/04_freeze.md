@@ -103,7 +103,7 @@ freeze 无独立命令入口，作为 lazy `VACUUM` 扫描页面的一部分在 
 - prepare 可能读取 clog / multixact（代价较高），在临界区外执行；
 - execute 改写 tuple 头并写入 WAL，在临界区内原子完成，以尽量缩短持锁时间。
 
-### prepare
+### 5.1 prepare
 
 prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确认其存活（DEAD 元组在 prune 阶段已被移除，不会进入冻结流程），再调用 `heap_prepare_freeze_tuple()`，在内存中构造 `HeapTupleFreeze` 计划（目标 xmax / infomask / frzflags / checkflags），同时维护页级 `HeapPageFreeze` 状态。各字段的判定如下：
 
@@ -130,7 +130,7 @@ prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确
 
 处理 multi 的目的：避免旧 multi 推迟 `relminmxid` 的推进，并减少对 SLRU 的重复访问。
 
-### execute
+### 5.2 execute
 
 按页决策，满足下列任一条件即进入 freeze path：
 

@@ -144,4 +144,4 @@ UPDATE 与 DELETE 一样先给旧版本写 `t_xmax`；差别是再插入新版�
 
 ---
 
-**相关笔记**: [HOT](../backend/access/heap/02_hot.md) · [Page Prune](../backend/access/heap/03_prune.md) · [Heap AM](../backend/access/heap/heap.md) · [VM](../backend/access/heap/01_vm.md) · [delete](./02_delete.md) · [pageinspect](../tools/01_pageinspect.md)
+**相关笔记**: [HOT](../backend/access/heap/02_hot.md) · [Page Prune](../backend/access/heap/03_prune.md) · [Heap AM](../backend/access/heap/heap.md) · [VM](../backend/access/heap/06_vm.md) · [delete](./02_delete.md) · [pageinspect](../tools/01_pageinspect.md)

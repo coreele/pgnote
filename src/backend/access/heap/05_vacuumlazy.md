@@ -3,8 +3,7 @@
 参考资料: [https://pgint.vonng.com/ch6/](https://pgint.vonng.com/ch6/) | 英文原版：[https://www.interdb.jp/pg/pgsql06/index.html](https://www.interdb.jp/pg/pgsql06/index.html)
 
 - 删除死元组（对象: 不可见的元组）
-- 冻结事务标识（对象: 可见的元组，避免事务 ID 回绕）、
-
+- 冻结事务标识（对象: 可见的元组，避免事务 ID 回绕）
 ## 1. dead tuple
 
 - delete

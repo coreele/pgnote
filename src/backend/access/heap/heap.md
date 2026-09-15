@@ -39,7 +39,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 | **hio.c**               | 堆页 I/O：`RelationGetBufferForTuple` 找空位，`RelationPutHeapTuple` 写入；协作 [FSM](../../storage/freespace/01_fsm.md)，必要时清 VM。                |
 | **heaptoast.c**         | 元组太大则压缩/外置到 toast 表；删除时回收。insert/update 路径由 `heapam.c` 调用。                                                                     |
 | **pruneheap.c**         | 页内剪枝与 [HOT](./02_hot.md)：回收死元组、改 redirect/dead/unused。见 [Page Prune](./03_prune.md)；普通访问也可 `heap_page_prune_opt`。               |
-| **visibilitymap.c**     | 每堆页 2 bit（all-visible / all-frozen）。VACUUM 置位以便跳页；DML 破坏「全可见」时清位。见 [VM](./01_vm.md)。                                         |
+| **visibilitymap.c**     | 每堆页 2 bit（all-visible / all-frozen）。VACUUM 置位以便跳页；DML 破坏「全可见」时清位。见 [VM](06_vm.md)。                                         |
 | **vacuumlazy.c**        | 并发 VACUUM：扫堆 → 收死 TID → 清索引 → 再清堆页 → 更新 VM / 截断。见 [Lazy VACUUM](05_vacuumlazy.md)。                                              |
 | **rewriteheap.c**       | CLUSTER / 整表改写：在新堆重写元组，修正 update 链的 ctid。                                                                                            |
 | **syncscan.c**          | 多个 seqscan 扫同一表时尽量共用 I/O。                                                                                                                  |
