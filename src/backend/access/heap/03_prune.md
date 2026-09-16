@@ -1,6 +1,6 @@
 # Page Prune
 
-## 1. 定义
+## 1. Overview
 
 **Page prune**：在**单个 heap 页内部**回收已死元组、缩短 HOT 链、整理碎片。**不跨页，不碰索引**。
 
@@ -14,11 +14,11 @@
 | **VACUUM prune** | `heap_page_prune()`         | 已持 cleanup lock                       | 每页必做；用 `OldestXmin`   |
 | **WAL replay**   | `heap_page_prune_execute()` | redo 路径                               | 应用 `XLOG_HEAP2_PRUNE` |
 
-## 2. 触发路径
+## 2. Entry
 
 ### 2.1. Optionally
 
-**在读路径**访问某页时调用。
+**在读路径**访问某页时调用 `heap_page_prune_opt`.
 
 按需 prune 的执行条件:
 
@@ -39,7 +39,7 @@
 
 ### 2.2. VACUUM
 
-`vacuumlazy.c` 扫描每页时**直接**调用，已持 cleanup lock，用 `vacrel->cutoffs.OldestXmin` 判断是否可清理。
+`vacuumlazy.c` 扫描每页时**直接**调用，已持 cleanup lock，用 `vacrel->cutoffs.OldestXmin` 判断是否可清理，调用 prune 核心函数 `heap_page_prune`。
 
 ## 3. pd_prune_xid
 
