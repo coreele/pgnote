@@ -20,7 +20,7 @@ mdbook build          # 输出到 book/（已在 .gitignore）
 ```bash
 npm install           # 安装 Prettier
 git config core.hooksPath .githooks   # 启用仓库内 pre-commit（本机一次即可）
-npm run format:src    # 格式化 src/、temp/ 以及 README / PROGRESS / TODO
+npm run format:src    # 格式化 src/、waiting/ 以及 README / TODO
 npm run format        # 格式化全部未 ignore 的 .md
 npm run format:check  # 仅检查，不改写
 ```

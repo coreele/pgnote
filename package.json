@@ -7,7 +7,7 @@
   "scripts": {
     "format": "prettier --write \"**/*.md\"",
     "format:check": "prettier --check \"**/*.md\"",
-    "format:src": "prettier --write \"src/**/*.md\" \"temp/**/*.md\" \"README.md\" \"PROGRESS.md\" \"TODO.md\""
+    "format:src": "prettier --write \"src/**/*.md\" \"waiting/**/*.md\" \"README.md\" \"TODO.md\""
   },
   "devDependencies": {
     "prettier": "^3.6.2"

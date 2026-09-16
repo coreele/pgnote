@@ -139,10 +139,10 @@
 | 7      | nbtree                              | ok    | ok    |        | [nbtree](src/backend/access/nbtree/nbtree.md)             |
 | 8      | Table AM / Index AM API             |       |       |        |                                                           |
 | 9      | GIN / GiST / BRIN                   |       |       |        |                                                           |
-| 10     | pgvector: vector Type & Typmod      |       |       |        |                                                           |
-| 11     | pgvector: Distance Functions & SIMD |       |       |        |                                                           |
-| 12     | pgvector: IVFFlat Index             |       |       |        |                                                           |
-| 13     | pgvector: HNSW Index                |       |       |        |                                                           |
+| 10     | pgvector: vector Type & Typmod      |       |       |        | [01_type_typmod](waiting/pgvector/01_type_typmod.md)      |
+| 11     | pgvector: Distance Functions & SIMD |       |       |        | [02_distance_simd](waiting/pgvector/02_distance_simd.md)  |
+| 12     | pgvector: IVFFlat Index             |       |       |        | [03_ivfflat](waiting/pgvector/03_ivfflat.md)              |
+| 13     | pgvector: HNSW Index                |       |       |        | [04_hnsw](waiting/pgvector/04_hnsw.md)                    |
 
 ## memory
 
