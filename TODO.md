@@ -94,7 +94,7 @@
 | 10     | Non-overwrite MVCC                  | ok    | ok    |        | [00_readme](src/backend/access/transam/00_readme.md)                   |
 | 11     | MultiXact                           |       |       |        |                                                                        |
 | 12     | Subtrans / SAVEPOINT                |       |       |        |                                                                        |
-| 13     | XID Wraparound & Freeze             |       |       |        |                                                                        |
+| 13     | XID Wraparound & Freeze             | ok    |       |        | [04_freeze](src/backend/access/heap/04_freeze.md)                      |
 | 14     | SSI (Serializable / Predicate Lock) |       |       |        |                                                                        |
 | 15     | Two-Phase Commit                    |       |       |        |                                                                        |
 
@@ -130,7 +130,7 @@
 
 | number | topic                               | study | share | review | where                                                     |
 | ------ | ----------------------------------- | ----- | ----- | ------ | --------------------------------------------------------- |
-| 1      | Heap AM Overview                    |       |       |        | [heap](src/backend/access/heap/heap.md)                   |
+| 1      | Heap AM Overview                    | ok    |       |        | [heap](src/backend/access/heap/heap.md)                   |
 | 2      | VM                                  | ok    |       |        | [06_vm](src/backend/access/heap/06_vm.md)                 |
 | 3      | HOT                                 | ok    | ok    |        | [02_hot](src/backend/access/heap/02_hot.md)               |
 | 4      | Heap Prune                          | ok    | ok    |        | [03_prune](src/backend/access/heap/03_prune.md)           |

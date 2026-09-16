@@ -41,7 +41,7 @@
 
 `vacuumlazy.c` 扫描每页时**直接**调用，已持 cleanup lock，用 `vacrel->cutoffs.OldestXmin` 判断是否可清理。
 
-## 4. pd_prune_xid
+## 3. pd_prune_xid
 
 页上**最早**「将来可 prune」的 XID。UPDATE/DELETE 在旧页留下 dead 候选时设置：
 
@@ -53,7 +53,7 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 - 事务 abort → 后续 prune 是 no-op，hint 会被清掉
 - `pd_prune_xid == InvalidTransactionId` → `heap_page_prune_opt` 立刻返回
 
-## 5. Process
+## 4. Process
 
 `heap_page_prune()` 流程：
 
@@ -66,7 +66,7 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 4. 更新 `pd_prune_xid`、`PageClearFull`
 5. 写 WAL：`XLOG_HEAP2_PRUNE`
 
-## 6. Function
+## 5. Function
 
 | 函数                          | 作用                                     |
 | --------------------------- | -------------------------------------- |
@@ -76,9 +76,9 @@ PageSetPrunable(page, xid);   // heap_update / heap_delete · heapam.c
 | `heap_prune_chain()`        | 单条 HOT 链的 prune 逻辑                     |
 | `PageRepairFragmentation()` | 紧凑页内空闲区（`bufpage.c`）                   |
 
-## 9. Case
+## 6. Case
 
-### 9.1 `heap_page_prune_opt`
+### 6.1 `heap_page_prune_opt`
 
 ```sql
 DROP TABLE IF EXISTS test_prune;
@@ -100,7 +100,7 @@ SELECT count(*) FROM test_prune;
 
 页仍很空时，`heap_page_prune_opt` 通常**只检查 hint、不 prune**；要强制观察可再 UPDATE 把页填满，或跑 `VACUUM`。
 
-### 9.2 VACUUM
+### 6.2 VACUUM
 
 ```sql
 DROP TABLE IF EXISTS test_prune;
@@ -118,7 +118,7 @@ DELETE from test_prune where id = 3;
 VACUUM test_prune;   -- 每页直接 heap_page_prune，不依赖 PageIsFull
 ```
 
-### 9.3 Call Stack
+### 6.3 Call Stack
 
 ```c
 ExecVacuum | vacuum

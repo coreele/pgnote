@@ -55,7 +55,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 `handler` insert/update/delete → `heapam`（必要时 `heaptoast`）→ `hio` 选页写入 → 同一临界区清 VM → 可能 `heap_page_prune_opt`
 
 **VACUUM：**  
-`vacuumlazy` → `heapam_visibility` 判死活 → `pruneheap` 回收页空间 → 清索引死指针 → `visibilitymap_set` 标记可跳过页。见 [Lazy VACUUM](05_vacuumlazy.md)。
+`vacuumlazy` → `heapam_visibility` 判死活 → `pruneheap` 回收页空间 → 清索引死指针 → `visibilitymap_set` 标记可跳过页。见 [Lazy VACUUM](05_vacuumlazy.md) 与 [Freeze](04_freeze.md)。
 
 **CLUSTER / 表改写：**  
 `handler` → `rewriteheap`（保可见性与 ctid 链）→ 底层仍走堆写入路径

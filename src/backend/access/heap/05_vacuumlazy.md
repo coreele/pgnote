@@ -135,6 +135,8 @@ ExecVacuum | vacuum /* vacuum relations or all releated tables */
 
 ## 7. freeze
 
+元组冻结见 [Freeze](./04_freeze.md)。
+
 ```c
 heap_prepare_freeze_tuple
 heap_freeze_execute_prepared /* freeze heap tuples */

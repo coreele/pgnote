@@ -1,10 +1,8 @@
 # Freeze
 
-# Freeze（元组冻结）
-
 **概要**：XID 仅 32 位，用尽后会回绕。若页中老元组的 `xmin` 与当前 XID 的间隔逼近 2³¹，该元组会被误判为「未来事务插入」而不可见。freeze 在回绕临近前，将足够老的元组标记为**永久已提交**：此后判定可见性无需再查询 `pg_xact`（clog）。由此 `relfrozenxid` 得以推进，clog 得以截断。
 
-**阅读建议**：首次阅读 §1–§4 建立整体认识，再运行 §11.1 的实验观察 infomask 位变化与 `relfrozenxid` 推进。§5–§7 为实现细节（两阶段处理、WAL、追踪器）。§8、§10–§11 分别给出防御阈值、核心函数与流程速查，可按需查阅。
+**阅读建议**：首次阅读 §1–§4 建立整体认识，再运行 §10 的实验观察 infomask 位变化与 `relfrozenxid` 推进。§5–§7 为实现细节（两阶段处理、WAL、追踪器）。§8–§10 分别给出防御阈值、调用栈与实验。
 
 ---
 
@@ -44,7 +42,7 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 「过去」与「未来
 - **位的组合语义**：`COMMITTED | INVALID` 在正常事务流程中不可能同时出现；冻结后该组合表示「元组已永久提交，与 XID 环位置无关」；
 - **唯一例外 `xvac`**：该字段（PG 9.0 之前 `VACUUM FULL` 的 `HEAP_MOVED_OFF/IN` 遗留）仍会写入 `FrozenTransactionId` / Invalid。现代版本中已极少出现，但代码仍需兼容。
 
-实测（见 §11.1）：新插入行 `t_infomask = 2048`（`HEAP_XMAX_INVALID`）；`VACUUM FREEZE` 后变为 `2816 = 2048 | 0x0300`，`t_xmin` 数值不变。
+实测（见 §10）：新插入行 `t_infomask = 2048`（`HEAP_XMAX_INVALID`）；`VACUUM FREEZE` 后变为 `2816 = 2048 | 0x0300`，`t_xmin` 数值不变。
 
 ---
 
@@ -190,7 +188,7 @@ offsets[] /* 按 plan 分组的元组偏移 */
 
 ---
 
-## 10. call stack
+## 9. call stack
 
 ```text
 ExecVacuum | vacuum
@@ -215,7 +213,7 @@ ExecVacuum | vacuum
 
 ---
 
-## 11. case
+## 10. case
 
 - 基础：观察 infomask 变化、relfrozenxid 推进与 VM 标记
 
