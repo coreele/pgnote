@@ -130,8 +130,8 @@ ExecVacuum | vacuum
 		            ItemIdSetRedirect /* Update all redirected line pointers */
 		            ItemIdSetDead     /* Update all now-dead line pointers */
 		            ItemIdSetUnused   /* Update all now-unused line pointers */
-		            PageRepairFragmentation
-			            compactify_tuples
+		            PageRepairFragmentation /* bufpage.c */
+			            compactify_tuples   /* bufpage.c */
 	            PageClearFull
 	            XLogInsert(RM_HEAP2_ID, XLOG_HEAP2_PRUNE);
 ```
