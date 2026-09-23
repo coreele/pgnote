@@ -71,7 +71,7 @@ lazy_scan_skip
 	visibilitymap_get_status
 ```
 
-## 5. vacuum
+## 5. VACUUM
 
 ```
 vacuum
@@ -80,7 +80,7 @@ vacuum
 	vacuum heap | 清理不可见元组
 ```
 
-## 6. call stack
+## 6. Call stack
 
 ```c
 ExecVacuum | vacuum /* vacuum relations or all releated tables */
