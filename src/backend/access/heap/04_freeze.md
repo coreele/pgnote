@@ -2,11 +2,11 @@
 
 **概要**：XID 仅 32 位，用尽后会回绕。若页中老元组的 `xmin` 与当前 XID 的间隔逼近 2³¹，该元组会被误判为「未来事务插入」而不可见。freeze 在回绕临近前，将足够老的元组标记为**永久已提交**：此后判定可见性无需再查询 `pg_xact`（clog）。
 
----
-
+![730](assets/wraparound.png)
 ## 1. XID wraparound
 
-每个事务被分配一个 XID，记录于元组的 `xmin` / `xmax` 字段，作为可见性判定的依据。由于 XID 仅 32 位，约 42 亿个即告耗尽，PostgreSQL 将其视为环形计数器：分配至 2³²−1 后回绕至 3，先后关系按模 2³² 的**有符号差**计算：
+- XID 仅 32 位，约 42 亿个即告耗尽，PostgreSQL 将其视为环形计数器
+- 分配至 2³²−1 后回绕至 3，先后关系按模 2³² 的**有符号差**计算
 
 ```c
 TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 过去与未来各占 2³¹ */
@@ -22,14 +22,8 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 过去与未来各占 2�
 2. **推进 `relfrozenxid`**：该字段语义为「表中所有 `XID < relfrozenxid` 的元组均已冻结（或不存在）」，即表内仍需查询 clog 的 XID 下界；其值推进越远，后续冻结工作量越小；
 3. **clog 截断**：全库各表 `relfrozenxid` 的最小值记录于 `datfrozenxid`，早于该值的 `pg_xact` 段可由 `vac_truncate_clog()` 删除。
 
-| 层级   | 参数/状态                            | 作用                                   |
-| ---- | -------------------------------- | ------------------------------------ |
-| 行/页  | `freeze_min_age` → `FreezeLimit` | 扫到的页上多老的 XID 必须冻                     |
-| 表    | `freeze_table_age` → aggressive  | `relfrozenxid` 多老就认真扫表               |
-| 库    | `pg_database.datfrozenxid`       | 本库所有表 `relfrozenxid` 的最小值            |
-| 集群兜底 | `autovacuum_freeze_max_age`      | 逼近 wraparound 时强制 vacuum；并钳制上面两个 age |
 
----
+
 
 ## 2. `HEAP_XMIN_FROZEN`
 
@@ -43,21 +37,13 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 过去与未来各占 2�
 
 ---
 
-## 4. freeze time
+## 4. freeze age
 
-freeze 无独立命令入口，作为 lazy `VACUUM` 扫描页面的一部分在 `lazy_scan_prune()` 中执行。是否实际执行冻结取决于触发路径：
-
-| 入口                         | 触发条件                                                                      |
-| -------------------------- | ------------------------------------------------------------------------- |
-| `Lazy VACUUM` / autovacuum | 页内存在 < `FreezeLimit` 的 XID 时强制冻结；否则是否附带冻结由 VACUUM 依据成本决定                  |
-| anti-wraparound autovacuum | 表 `relfrozenxid` 年龄超过 `autovacuum_freeze_max_age`（默认 2 亿）时自动发起，可绕过多数成本限制； |
-| `VACUUM FREEZE`            | 将四个 freeze age 全部置 0，尽量全冻                                                 |
-| `CLUSTER` / `VACUUM FULL`  | `rewriteheap.c` 重写新堆时调用 `heap_freeze_tuple()`；不单独写 WAL，随整体重写落盘            |
-| WAL replay                 | `heap_xlog_freeze_page()` 应用 `XLOG_HEAP2_FREEZE_PAGE`                     |
-
-> **aggressive 模式**：当 `relfrozenxid ≤ nextXID − freeze_table_age`（默认 1.5 亿；`VACUUM FREEZE` 因 age 置 0 必然触发）时，VACUUM 进入 aggressive 模式，目标为「至少将 `relfrozenxid` 推进至 `FreezeLimit`」。因此：
-
----
+| 参数                          | 默认值                    | 触发后行为                                            | 跳过 all-visible |
+| --------------------------- | ---------------------- | ------------------------------------------------ | -------------- |
+| `vacuum_freeze_min_age`     | **50,000,000** (5千万)   | 常规 VACUUM, 扫到页面时顺手冻结                             | 是              |
+| `vacuum_freeze_table_age`   | **150,000,000** (1.5亿) | Aggressive VACUUM                                | 否              |
+| `autovacuum_freeze_max_age` | **200,000,000** (2亿)   | Anti-wraparound autovacuum，即便 `autovacuum=false` | 否              |
 
 ## 5. freeze process
 
@@ -113,14 +99,21 @@ OR (all_visible && all_frozen && prune 已产生 FPI)   -- 页面因 prune 已�
 
 `SetTransactionIdLimit()`（`varsup.c`）以全库最老 `datfrozenxid` 为基准设置四级阈值：
 
-| 阈值         | 取值（默认）                                    | 动作                                                     |
-| ---------- | ----------------------------------------- | ------------------------------------------------------ |
-| autovacuum | `oldest + autovacuum_freeze_max_age`（2 亿） | 触发 anti-wraparound autovacuum（并逐库连续处理）                 |
-| WARNING    | `wrapLimit − 4000 万`                      | 输出日志 "database must be vacuumed within N transactions" |
-| 停止分配       | `wrapLimit − 300 万`                       | 拒绝分配新 XID（只读不受影响；单用户模式供 DBA 恢复）                        |
-| wrapLimit  | `oldest + 2³¹`                            | 理论回绕点，不可越过                                             |
+```c
+xidWrapLimit = oldest_datfrozenxid + (MaxTransactionId >> 1);
+xidStopLimit = xidWrapLimit - 3000000;
+xidWarnLimit = xidWrapLimit - 40000000;
+xidVacLimit = oldest_datfrozenxid + autovacuum_freeze_max_age; /* 2亿*/
+```
 
-**failsafe**（PG 12+）：表 `relfrozenxid` 老于 `max(vacuum_failsafe_age, 1.05 × autovacuum_freeze_max_age)`（默认 16 亿）时，正在进行的 aggressive VACUUM 放弃索引清理与表截断，仅以尽快推进 `relfrozenxid` 为目标。
+| 界限             | 计算                                   | 年龄（相对 oldest）     | 触发动作                          |
+| -------------- | ------------------------------------ | ----------------- | ----------------------------- |
+| `xidVacLimit`  | `oldest + autovacuum_freeze_max_age` | **2 亿**           | 发信号催 autovacuum（每 64K 一次）     |
+| `xidWarnLimit` | `xidWrapLimit - 40,000,000`          | **≈21.07 亿**      | 打 WARNING "必须在 N 个事务内 vacuum" |
+| `xidStopLimit` | `xidWrapLimit - 3,000,000`           | **≈21.44 亿**      | ERROR 拒绝分配 XID（单用户模式除外）       |
+| `xidWrapLimit` | `oldest + (MaxTransactionId >> 1)`   | **≈21.47 亿（2³¹）** | 逻辑回绕、数据丢失点                    |
+
+> **failsafe**（PG 12+）：表 `relfrozenxid` 老于 `max(vacuum_failsafe_age, 1.05 × autovacuum_freeze_max_age)`（默认 16 亿）时，正在进行的 aggressive VACUUM 放弃索引清理与表截断，仅以尽快推进 `relfrozenxid` 为目标。
 
 ---
 
@@ -136,7 +129,7 @@ ExecVacuum | vacuum /* vacuum relations or all releated tables */
                     heap_page_prune /* prune one page */
 	                    ...
                     heap_prepare_freeze_tuple
-                    heap_freeze_execute_prepared /* freeze heap tuples */
+                    heap_freeze_execute_prepared  /* freeze heap tuples */
                         heap_execute_freeze_tuple /* Execute the prepared freezing of a tuple with caller's freeze plan */
 ```
 
