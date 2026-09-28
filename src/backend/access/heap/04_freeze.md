@@ -14,7 +14,7 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 过去与未来各占 2�
 
 > Linux 同类型判断: https://github.com/torvalds/linux/blob/master/include/linux/jiffies.h
 
-由此产生一个问题：设某元组 `xmin = 5`（对应早已提交的事务），只要系统持续分配 XID，该值与 `nextXID` 的间隔便不断增大。当间隔逼近 2³¹ 时，`(int32)(5 - nextXID)` 的符号发生翻转，该元组将被判定为「未来事务插入」，对所有快照不可见，等价于数据丢失；且若 clog 已截断，其提交记录亦无从查证。
+问题：设某元组 `xmin = 5`（对应早已提交的事务），只要系统持续分配 XID，该值与 `nextXID` 的间隔便不断增大。当间隔逼近 2³¹ 时，`(int32)(5 - nextXID)` 的符号发生翻转，该元组将被判定为「未来事务插入」，对所有快照不可见，等价于数据丢失；且若 clog 已截断，其提交记录亦无从查证。
 
 对策（freeze）：在间隔逼近 2³¹ 之前，将老元组的可见性判定由「依据 XID 与 clog」改为「永久可见」。一次冻结产生三项结果：
 
@@ -39,63 +39,60 @@ TransactionIdPrecedes(a, b) ≡ (int32)(a - b) < 0   /* 过去与未来各占 2�
 
 ## 4. freeze age
 
-| 参数                          | 默认值                    | 触发后行为                                            | 跳过 all-visible |
-| --------------------------- | ---------------------- | ------------------------------------------------ | -------------- |
-| `vacuum_freeze_min_age`     | **50,000,000** (5千万)   | 常规 VACUUM, 扫到页面时顺手冻结                             | 是              |
-| `vacuum_freeze_table_age`   | **150,000,000** (1.5亿) | Aggressive VACUUM                                | 否              |
-| `autovacuum_freeze_max_age` | **200,000,000** (2亿)   | Anti-wraparound autovacuum，即便 `autovacuum=false` | 否              |
+| 参数                        | 默认值                  | 触发后行为                                                           | 跳过 all-visible |
+| --------------------------- | ----------------------- | -------------------------------------------------------------------- | ---------------- |
+| `vacuum_freeze_min_age`     | **50,000,000** (5千万)  | 常规 VACUUM, 扫到页面时顺手冻结                                      | 是               |
+| `vacuum_freeze_table_age`   | **150,000,000** (1.5亿) | Aggressive VACUUM                                                    | 否               |
+| `autovacuum_freeze_max_age` | **200,000,000** (2亿)   | forced vacuum<br>Anti-wraparound autovacuum，即便 `autovacuum=false` | 否               |
 
 ## 5. freeze process
 
-冻结实现分为两阶段
-- prepare 可能读取 clog / multixact（代价较高），在临界区外执行；
-- execute 改写 tuple 头并写入 WAL，在临界区内原子完成，以尽量缩短持锁时间。
+两阶段：读 clog 的高代价判定放临界区外，临界区内只做内存改写与 WAL。
+
+| 阶段    | 入口                             | 位置     | 职责                                                     |
+| ------- | -------------------------------- | -------- | -------------------------------------------------------- |
+| prepare | `heap_prepare_freeze_tuple()`    | 临界区外 | 逐元组生成 `HeapTupleFreeze` 计划，维护页级 `HeapPageFreeze` |
+| execute | `heap_freeze_execute_prepared()` | 临界区内 | 复核 clog、改 tuple 头、写 `XLOG_HEAP2_FREEZE_PAGE`      |
+
+- `HeapTupleFreeze`：目标 `xmax` / `t_infomask` / `t_infomask2` / `frzflags`（xvac）/ `checkflags`（待复核）/ `offset`；
+- `HeapPageFreeze`：`freeze_required` + freeze / no-freeze 两套 `NewRelfrozenXid`（§5.2）。
 
 ### 5.1 prepare
 
-prune 之后，对每个 `LP_NORMAL` 元组先用 `HeapTupleSatisfiesVacuum` 确认其存活（DEAD 元组在 prune 阶段已被移除，不会进入冻结流程），再调用 `heap_prepare_freeze_tuple()`，在内存中构造 `HeapTupleFreeze` 计划（目标 xmax / infomask / frzflags / checkflags），同时维护页级 `HeapPageFreeze` 状态。各字段的判定如下：
+`lazy_scan_prune()` 在 `heap_page_prune()` 后，对每个非 DEAD 的 `LP_NORMAL` 元组调用 `heap_prepare_freeze_tuple()`：初始化计划后逐字段判定，返回是否有可用计划，输出 `*totally_frozen`，并维护 `pagefrz`。落在 `relfrozenxid` 之前即报 `DATA_CORRUPTED`。
 
-| 字段            | 冻结条件                  | 动作                                                    |
-| ------------- | --------------------- | ----------------------------------------------------- |
-| `xmin`        | `< OldestXmin`        | `infomask \|= HEAP_XMIN_FROZEN`；执行时复核 committed       |
-| `xmax`（普通）    | `< OldestXmin`        | 清空 xmax、置 `HEAP_XMAX_INVALID`；非 lock-only 则复核 aborted |
-| `xmax`（multi） | `FreezeMultiXactId()` | 四种处理结果，见下                                             |
-| `xvac`        | 存在即冻结                 | 写入 `FrozenTransactionId` / Invalid                    |
+| 字段            | 条件                  | 计划动作                                    | checkflag                                       |
+| --------------- | --------------------- | ------------------------------------------- | ----------------------------------------------- |
+| `xmin`          | 非普通 XID            | 已冻结                                      | —                                               |
+|                 | `< OldestXmin`        | `t_infomask \|= HEAP_XMIN_FROZEN`           | `..._XMIN_COMMITTED`                            |
+| `xvac`          | 普通 XID              | 冻结（MOVED_OFF 置 Invalid）                | —                                               |
+| `xmax`          | `< OldestXmin`        | 清空 xmax、`\|= HEAP_XMAX_INVALID`          | 非 lock-only 时 `..._XMAX_ABORTED`              |
 
-两点说明：
+- 复核推迟到 execute：prepare 仅登记 `checkflags`，查 clog 在临界区前、每页一次；
+- freeze_xmax 只会遇到 **lock-only 与 aborted updater**——已提交 updater 的 xmax `< OldestXmin` 时元组早已 DEAD 被 prune。
 
-- 已提交 updater 的 xmax 不可能 < `OldestXmin`（否则整个元组早已 DEAD 并被移除），因此进入 freeze_xmax 路径的仅有 **lock-only 与 aborted updater**；
-- **不信任 hint bit**：checkflags（如 `HEAP_FREEZE_CHECK_XMIN_COMMITTED`）要求在执行阶段的临界区之外复核 clog（代价高，不能反复执行），复核失败即报 `DATA_CORRUPTED`。
-
-`FreezeMultiXactId()` 的四种处理结果（除 NOOP 外均强制 `freeze_required`）：
-
-| flags                 | 场景                          | 动作                                        |
-| --------------------- | --------------------------- | ----------------------------------------- |
-| `FRM_NOOP`            | multi 尚新（成员可能 in-progress）  | 原样保留，仅回退 NoFreeze 追踪器                     |
-| `FRM_INVALIDATE_XMAX` | 旧 multi 且 lock-only / 成员均可弃 | 直接清空 xmax                                 |
-| `FRM_RETURN_IS_XID`   | 仅剩一个 updater 成员             | 以普通 XID 替换 multi（可附 `FRM_MARK_COMMITTED`） |
-| `FRM_RETURN_IS_MULTI` | ≥ 2 个存活成员                   | 分配仅含存活成员的新 multi（尽量避免）                    |
-
-处理 multi 的目的：避免旧 multi 推迟 `relminmxid` 的推进，并减少对 SLRU 的重复访问。
+> 本节 xmax 暂只讨论普通 XID；`HEAP_XMAX_IS_MULTI`（MultiXactId）路径暂略。
 
 ### 5.2 execute
 
-按页决策，满足下列任一条件即进入 freeze path：
+`lazy_scan_prune()` 按页二选一，进入 **freeze path** 的条件：
 
-```text
-pagefrz.freeze_required                             -- 页内含 < FreezeLimit 的 XID，必须冻结
-OR tuples_frozen == 0                               -- 无任何冻结计划，执行代价可忽略；且页面因此可标记 all-frozen
-OR (all_visible && all_frozen && prune 已产生 FPI)   -- 页面因 prune 已生成 FPI、必然写 WAL，可一并完成冻结
+```c
+/* lazy_scan_prune() @ vacuumlazy.c */
+if (pagefrz.freeze_required ||              /* 页内有 < FreezeLimit 的 XID */
+    tuples_frozen == 0 ||                   /* 无计划，零成本且可标 all-frozen */
+    (prunestate->all_visible && prunestate->all_frozen &&
+     fpi_before != pgWalUsage.wal_fpi))     /* prune 新增了 FPI，反正要写 WAL */
 ```
 
-- **freeze path**：`heap_freeze_execute_prepared()` 在临界区内逐元组调用 `heap_execute_freeze_tuple()` 并写 WAL（§6）；页级追踪器采用 `FreezePageRelfrozenXid/RelminMxid`；
-- **no-freeze path**：追踪器采用 `NoFreezePage*`（回退至页内仍残留的最老 XID），并强制 `all_frozen = false`——仅执行 freeze path 的页面才可能被标记为 VM all-frozen。
+- **freeze path**：追踪器用 `FreezePage*`；`tuples_frozen > 0` 时算 `snapshotConflictHorizon` 再调 `heap_freeze_execute_prepared()`：临界区外按 `checkflags` 复核 clog（不符报 `DATA_CORRUPTED`）→ `START_CRIT_SECTION()` → 逐元组 `heap_execute_freeze_tuple()` → `MarkBufferDirty()` → `XLogInsert(XLOG_HEAP2_FREEZE_PAGE)`（计划去重）→ `END_CRIT_SECTION()`。
+- **no-freeze path**：追踪器用 `NoFreezePage*`（回退到页内最老 XID），强制 `all_frozen = false`、`tuples_frozen = 0`；只有 freeze path 的页才可能标 all-frozen。
 
-当各存活元组的 xmin/xmax 均已（或将）冻结（`totally_frozen`）时，页级 `all_frozen` 成立；其与 `all_visible` 共同决定 `lazy_scan_heap` 是否调用 `visibilitymap_set(..., ALL_VISIBLE | ALL_FROZEN)`。
+`all_frozen` 初值 true，任一 `!totally_frozen` 元组即置 false；与 `all_visible` 共同决定 `visibilitymap_set(..., ALL_VISIBLE | ALL_FROZEN)`。
 
 ---
 
-## 8. failsafe
+## 6. failsafe
 
 `SetTransactionIdLimit()`（`varsup.c`）以全库最老 `datfrozenxid` 为基准设置四级阈值：
 
@@ -106,18 +103,18 @@ xidWarnLimit = xidWrapLimit - 40000000;
 xidVacLimit = oldest_datfrozenxid + autovacuum_freeze_max_age; /* 2亿*/
 ```
 
-| 界限             | 计算                                   | 年龄（相对 oldest）     | 触发动作                          |
-| -------------- | ------------------------------------ | ----------------- | ----------------------------- |
-| `xidVacLimit`  | `oldest + autovacuum_freeze_max_age` | **2 亿**           | 发信号催 autovacuum（每 64K 一次）     |
-| `xidWarnLimit` | `xidWrapLimit - 40,000,000`          | **≈21.07 亿**      | 打 WARNING "必须在 N 个事务内 vacuum" |
-| `xidStopLimit` | `xidWrapLimit - 3,000,000`           | **≈21.44 亿**      | ERROR 拒绝分配 XID（单用户模式除外）       |
-| `xidWrapLimit` | `oldest + (MaxTransactionId >> 1)`   | **≈21.47 亿（2³¹）** | 逻辑回绕、数据丢失点                    |
+| 界限           | 计算                                 | 年龄（相对 oldest）  | 触发动作                              |
+| -------------- | ------------------------------------ | -------------------- | ------------------------------------- |
+| `xidVacLimit`  | `oldest + autovacuum_freeze_max_age` | **2 亿**             | 发信号催 autovacuum（每 64K 一次）    |
+| `xidWarnLimit` | `xidWrapLimit - 40,000,000`          | **≈21.07 亿**        | 打 WARNING "必须在 N 个事务内 vacuum" |
+| `xidStopLimit` | `xidWrapLimit - 3,000,000`           | **≈21.44 亿**        | ERROR 拒绝分配 XID（单用户模式除外）  |
+| `xidWrapLimit` | `oldest + (MaxTransactionId >> 1)`   | **≈21.47 亿（2³¹）** | 逻辑回绕、数据丢失点                  |
 
 > **failsafe**（PG 12+）：表 `relfrozenxid` 老于 `max(vacuum_failsafe_age, 1.05 × autovacuum_freeze_max_age)`（默认 16 亿）时，正在进行的 aggressive VACUUM 放弃索引清理与表截断，仅以尽快推进 `relfrozenxid` 为目标。
 
 ---
 
-## 9. Call stack
+## 7. Call stack
 
 ```text
 ExecVacuum | vacuum /* vacuum relations or all releated tables */
@@ -130,12 +127,13 @@ ExecVacuum | vacuum /* vacuum relations or all releated tables */
 	                    ...
                     heap_prepare_freeze_tuple
                     heap_freeze_execute_prepared  /* freeze heap tuples */
+                        HEAP_FREEZE_CHECK_XXXXXX  /* Perform xmin/xmax XID status sanity checks before critical section */
                         heap_execute_freeze_tuple /* Execute the prepared freezing of a tuple with caller's freeze plan */
 ```
 
 ---
 
-## 10. case
+## 9. case
 
 - 基础：观察 infomask 变化、relfrozenxid 推进与 VM 标记
 
