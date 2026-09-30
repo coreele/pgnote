@@ -44,7 +44,7 @@
 - [node](./backend/node/node.md)
   - [List](./backend/node/list.md)
 - [access](./backend/access/access.md)
-  - [AM API](backend/access/amroutine.md)
+  - [AM Routine](./backend/access/amroutine.md)
   - [heap](./backend/access/heap/heap.md)
     - [VACUUM Overview](./backend/access/heap/01_vacuum.md)
     - [HOT](./backend/access/heap/02_hot.md)

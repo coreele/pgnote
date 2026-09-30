@@ -59,27 +59,27 @@ RelationInitTableAccessMethod
 ```
 
 
-## 3. `TableAmRoutine`
+## `TableAmRoutine`
 
 > tableam.h:288
 
-| 分组          | 回调                                                                                                                                                                                                                                   | 说明                            |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| 分组        | 回调                                                                                                                                                                                                                                 | 说明                                   |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------- |
 | slot        | `slot_callbacks`                                                                                                                                                                                                                     | 返回 `TupleTableSlotOps`，决定元组容器 |
-| scan        | `scan_begin` / `scan_end` / `scan_rescan` / `scan_getnextslot`                                                                                                                                                                       | `TableScanDesc` 生命周期          |
-| tid range   | `scan_set_tidrange` / `scan_getnextslot_tidrange`                                                                                                                                                                                    | 二者成对出现                        |
-| 并行 scan     | `parallelscan_estimate` / `parallelscan_initialize` / `parallelscan_reinitialize`                                                                                                                                                    |                               |
-| index fetch | `index_fetch_begin` / `index_fetch_reset` / `index_fetch_end` / `index_fetch_tuple`                                                                                                                                                  | 索引 → 表回表                      |
-| tuple 读     | `tuple_fetch_row_version` / `tuple_tid_valid` / `tuple_get_latest_tid` / `tuple_satisfies_snapshot` / `index_delete_tuples`                                                                                                          | 非修改操作                         |
-| tuple 写     | `tuple_insert` / `multi_insert` / `tuple_insert_speculative` / `tuple_complete_speculative` / `tuple_delete` / `tuple_update` / `tuple_lock` / `finish_bulk_insert`                                                                  | DML                           |
-| DDL / 维护    | `relation_set_new_filelocator` / `relation_nontransactional_truncate` / `relation_copy_data` / `relation_copy_for_cluster` / `relation_vacuum` / `scan_analyze_next_block(tuple)` / `index_build_range_scan` / `index_validate_scan` |                               |
-| 杂项          | `relation_size` / `relation_needs_toast_table` / `relation_toast_am` / `relation_fetch_toast_slice`                                                                                                                                  |                               |
-| planner     | `relation_estimate_size`                                                                                                                                                                                                             |                               |
-| executor    | `scan_bitmap_next_block(tuple)` / `scan_sample_next_block(tuple)`                                                                                                                                                                    |                               |
+| scan        | `scan_begin` / `scan_end` / `scan_rescan` / `scan_getnextslot`                                                                                                                                                                       | `TableScanDesc` 生命周期               |
+| tid range   | `scan_set_tidrange` / `scan_getnextslot_tidrange`                                                                                                                                                                                    | 二者成对出现                           |
+| 并行 scan   | `parallelscan_estimate` / `parallelscan_initialize` / `parallelscan_reinitialize`                                                                                                                                                    |                                        |
+| index fetch | `index_fetch_begin` / `index_fetch_reset` / `index_fetch_end` / `index_fetch_tuple`                                                                                                                                                  | 索引 → 表回表                          |
+| tuple 读    | `tuple_fetch_row_version` / `tuple_tid_valid` / `tuple_get_latest_tid` / `tuple_satisfies_snapshot` / `index_delete_tuples`                                                                                                          | 非修改操作                             |
+| tuple 写    | `tuple_insert` / `multi_insert` / `tuple_insert_speculative` / `tuple_complete_speculative` / `tuple_delete` / `tuple_update` / `tuple_lock` / `finish_bulk_insert`                                                                  | DML                                    |
+| DDL / 维护  | `relation_set_new_filelocator` / `relation_nontransactional_truncate` / `relation_copy_data` / `relation_copy_for_cluster` / `relation_vacuum` / `scan_analyze_next_block(tuple)` / `index_build_range_scan` / `index_validate_scan` |                                        |
+| 杂项        | `relation_size` / `relation_needs_toast_table` / `relation_toast_am` / `relation_fetch_toast_slice`                                                                                                                                  |                                        |
+| planner     | `relation_estimate_size`                                                                                                                                                                                                             |                                        |
+| executor    | `scan_bitmap_next_block(tuple)` / `scan_sample_next_block(tuple)`                                                                                                                                                                    |                                        |
 
 heap 的填法见 `heapam_methods`（heapam_handler.c:2545），由 `heap_tableam_handler()` 返回。
 
-## 4. `IndexAmRoutine`
+## `IndexAmRoutine`
 
 > amapi.h:210
 
@@ -93,20 +93,20 @@ heap 的填法见 `heapam_methods`（heapam_handler.c:2545），由 `heap_tablea
 
 **回调**：
 
-| 阶段        | 回调                                                                                    | 说明                          |
-| ----------- | --------------------------------------------------------------------------------------- | ----------------------------- |
-| 构建        | `ambuild` / `ambuildempty`                                                              | 建索引 / 建空索引             |
-| 写入        | `aminsert`                                                                              | 插入一条索引项                |
-| 清理        | `ambulkdelete` / `amvacuumcleanup`                                                      | VACUUM                        |
-| 规划        | `amcostestimate`                                                                        | 代价估算                      |
-| 选项 / 属性 | `amoptions` / `amproperty` / `ambuildphasename`                                         | 后两者可为 NULL               |
-| opclass     | `amvalidate` / `amadjustmembers`                                                        | 校验 opclass / opfamily       |
+| 阶段        | 回调                                                                                                 | 说明                                   |
+| ----------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| 构建        | `ambuild` / `ambuildempty`                                                                           | 建索引 / 建空索引                      |
+| 写入        | `aminsert`                                                                                           | 插入一条索引项                         |
+| 清理        | `ambulkdelete` / `amvacuumcleanup`                                                                   | VACUUM                                 |
+| 规划        | `amcostestimate`                                                                                     | 代价估算                               |
+| 选项 / 属性 | `amoptions` / `amproperty` / `ambuildphasename`                                                      | 后两者可为 NULL                        |
+| opclass     | `amvalidate` / `amadjustmembers`                                                                     | 校验 opclass / opfamily                |
 | 扫描        | `ambeginscan` / `amrescan` / `amgettuple` / `amgetbitmap` / `amendscan` / `ammarkpos` / `amrestrpos` | `amgettuple` 与 `amgetbitmap` 至少一个 |
-| 并行扫描    | `amestimateparallelscan` / `aminitparallelscan` / `amparallelrescan`                    |                               |
+| 并行扫描    | `amestimateparallelscan` / `aminitparallelscan` / `amparallelrescan`                                 |                                        |
 
 btree 的例子：`bthandler()`（nbtree.c:96）逐字段填好后返回。
 
-## 5. 索引扫描示例
+## 索引扫描
 
 ```text
 index_beginscan  -> rd_indam->ambeginscan
@@ -117,21 +117,34 @@ index_getnext_slot
 index_endscan    -> rd_indam->amendscan
 ```
 
-## 6. 注册与 SQL 接口
+## 注册
 
-- catalog：`pg_am`（`amname`、`amhandler`、`amtype`），`CREATE ACCESS METHOD` 即插入一行。
-- opclass 体系：`pg_opclass` / `pg_opfamily` / `pg_amop` / `pg_amproc`。
-- 支持函数：`index_getprocinfo()`（indexam.c）按 `amsupport` 取 proc；opclass 选项走 `amoptsprocnum`。
-- 校验：SQL 函数 `amvalidate()` → `GetIndexAmRoutineByAmId()` → `amroutine->amvalidate()`。
+```sql
+CREATE ACCESS METHOD duckdb
+    TYPE TABLE
+    HANDLER duckdb._am_handler;
 
-## 7. 小结
+CREATE ACCESS METHOD orioledb TYPE TABLE
+HANDLER orioledb_tableam_handler;
+
+CREATE ACCESS METHOD hnsw TYPE INDEX HANDLER hnswhandler;
+CREATE ACCESS METHOD ivfflat TYPE INDEX HANDLER ivfflathandler;
+```
+
+除 in-tree 实现外，扩展同样通过 `CREATE ACCESS METHOD` 注册自定义 AM：
+
+- [orioledb](https://github.com/orioledb/orioledb/blob/3eb704e78be72a1825625e027fcedcee671d361b/sql/orioledb--1.0_prod.sql#L14)：table AM（`TYPE TABLE`），用 undo log 实现 MVCC，替代 heap 的就地更新，缓解表膨胀并降低 WAL 开销。
+- [pg_duckdb](https://github.com/duckdb/pg_duckdb/blob/ee38d3b540ecea1d93683ba99bdcec5632a21eaf/sql/pg_duckdb--1.0.0.sql#L138)：table AM（`TYPE TABLE），底层接入 DuckDB 的列式存储，面向 AP/OLAP 分析场景。
+- [pgvector](https://github.com/pgvector/pgvector/blob/468fc77093e4d92596dab5d0943633fc8eef24e1/sql/vector.sql#L355-L364)：index AM（`TYPE INDEX`），注册 `ivfflat` / `hnsw` 两种索引，为向量类型提供近似最近邻检索，即开头 `pg_am` 中的 `ivfflat` / `hnsw` 两行。
+
+## 小结
 
 | 项目          | Table AM                                    | Index AM                                  |
-| ----------- | ------------------------------------------- | ----------------------------------------- |
-| 接口结构        | `TableAmRoutine`                            | `IndexAmRoutine`                          |
+| ------------- | ------------------------------------------- | ----------------------------------------- |
+| 接口结构      | `TableAmRoutine`                            | `IndexAmRoutine`                          |
 | relcache 字段 | `rd_tableam`                                | `rd_indam`                                |
-| 包装函数        | `table_*`                                   | `index_*`                                 |
-| handler     | `heap_tableam_handler`                      | `bthandler` / …                           |
-| 描述符基类       | `TableScanDescData` / `IndexFetchTableData` | `IndexScanDescData`                       |
-| 元组容器        | `TupleTableSlotOps`（`slot_callbacks`）       | —                                         |
-| in-tree 实现  | heap                                        | btree / hash / gin / gist / spgist / brin |
+| 包装函数      | `table_*`                                   | `index_*`                                 |
+| handler       | `heap_tableam_handler`                      | `bthandler` / …                           |
+| 描述符基类    | `TableScanDescData` / `IndexFetchTableData` | `IndexScanDescData`                       |
+| 元组容器      | `TupleTableSlotOps`（`slot_callbacks`）     | —                                         |
+| 实现          | heap(in-tree) / duckdb                      | btree / hash / gin / gist / spgist / brin |
