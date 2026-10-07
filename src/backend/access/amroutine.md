@@ -2,10 +2,11 @@
 
 ## AmRoutine
 
-- PostgreSQL 把表/索引的物理实现抽象成两组回调结构体 —— `TableAmRoutine` 与 `IndexAmRoutine`。
-- relcache 打开关系时，经 `pg_am.amhandler` 调 handler 函数拿到结构体，缓存在 `Relation->rd_tableam` / `Relation->rd_indam`；
+- PostgreSQL 把表/索引的物理实现抽象成两组回调结构体 —— `TableAmRoutine` 与 `IndexAmRoutine`
+- `relcache` 打开关系时，经 `pg_am.amhandler` 调 handler 函数拿到结构体，缓存在 `Relation->rd_tableam` / `Relation->rd_indam`；
 - 上层（executor、commands、DDL、VACUUM、optimizer）只调 `table_*` / `index_*` 包装函数，由包装函数转发到 routine 里的函数指针
-- in-tree 的 table AM 只有 heap，index AM 有: btree/hash/ gin/gist/spgist/brin。
+- in-tree table AM: heap
+- in-tree index AM: btree/hash/gin/gist/spgist/brin
 
 ```sql
 postgres=# select * from pg_am;
@@ -47,7 +48,6 @@ executor / commands / DDL / VACUUM / optimizer
 
 `pg_class.relam` → `pg_am.amhandler`（regproc）、`pg_am.amtype`（`AMTYPE_TABLE 't'` / `AMTYPE_INDEX 'i'`）。
 
-
 ```c
 RelationInitTableAccessMethod
 	SearchSysCache1(AMOID, rd_rel->relam) /* query pg_am.amhandler */
@@ -57,7 +57,6 @@ RelationInitTableAccessMethod
 				heap_tableam_handler
 					return TableAmRoutine heapam_methods
 ```
-
 
 ## `TableAmRoutine`
 
