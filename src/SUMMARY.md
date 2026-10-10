@@ -38,9 +38,10 @@
 -->
 
 - [executor](./backend/executor/executor.md)
-  - [Overview](./backend/executor/00_overview.md)
-  - [Pipeline](./backend/executor/01_pipeline.md)
+  - [README](./backend/executor/00_readme.md)
+  - [Pipeline](./backend/executor/01_overview.md)
   - [State](./backend/executor/02_state.md)
+  - [WHERE](./backend/executor/03_expr.md)
 - [node](./backend/node/node.md)
   - [List](./backend/node/list.md)
 - [access](./backend/access/access.md)
