@@ -178,3 +178,35 @@ makeFromExpr(..., qual)       放进 Query.jointree->quals
 - `SeqScan.plan.qual` 里有几项，和 `EEOP_QUAL` 的个数是什么关系？
 - `(3, 1)` 和 `(NULL, 1)` 分别是在哪个 opcode 上离开 step 数组的？
 - `ExecQual` 返回的 bool 是哪个 step 写进 `resvalue` 的？
+
+[execExpr](https://github.com/postgres/postgres/blob/c4117066ba9f7b1cfb36eb634c0c306785748b80/src/backend/executor/execExprInterp.c#L881-L890)
+
+SELECT 1  + 1 from tb;
+
+```
+exec_simple_query
+    PortalStart | ExecutorStart | standard_ExecutorStart
+        InitPlan
+            ExecInitNode
+                ExecInitSeqScan
+                    ExecAssignExprContext
+                        planstate->ps_ExprContext = CreateExprContext(estate);
+                            CreateExprContextInternal
+                    ExecAssignScanProjectionInfo
+                        ExecConditionalAssignProjectionInfo
+                            ExecAssignProjectionInfo
+                                ExecBuildProjectionInfo
+                                    ExecInitExprRec /* for each target */
+                                    [EEOP_CONST, EEOP_ASSIGN_TMP, EEOP_DONE]
+                                    ExecReadyExpr
+                                        ExecReadyInterpretedExpr
+                                            ExecInitInterpreter
+                                            state->evalfunc_private = (void *) ExecInterpExpr;
+    PortalRun | PortalRunSelect | ExecutorRun | standard_ExecutorRun
+        ExecutePlan | ExecProcNode | ExecProcNodeFirst
+            ExecSeqScan | ExecScan | ExecProject
+                ExecEvalExprSwitchContext
+	                ExecInterpExprStillValid
+		                ExecInterpExpr
+                        EEO_DISPATCH, EEO_CASE, EEO_NEXT
+```
