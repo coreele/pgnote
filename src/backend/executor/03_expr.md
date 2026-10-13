@@ -179,9 +179,7 @@ makeFromExpr(..., qual)       放进 Query.jointree->quals
 - `(3, 1)` 和 `(NULL, 1)` 分别是在哪个 opcode 上离开 step 数组的？
 - `ExecQual` 返回的 bool 是哪个 step 写进 `resvalue` 的？
 
-[execExpr](https://github.com/postgres/postgres/blob/c4117066ba9f7b1cfb36eb634c0c306785748b80/src/backend/executor/execExprInterp.c#L881-L890)
-
-SELECT 1  + 1 from tb;
+SELECT 1, 2 from tb;
 
 ```
 exec_simple_query
@@ -197,7 +195,7 @@ exec_simple_query
                             ExecAssignProjectionInfo
                                 ExecBuildProjectionInfo
                                     ExecInitExprRec /* for each target */
-                                    [EEOP_CONST, EEOP_ASSIGN_TMP, EEOP_DONE]
+                                    [EEOP_CONST, EEOP_ASSIGN_TMP, EEOP_CONST, EEOP_ASSIGN_TMP, EEOP_DONE]
                                     ExecReadyExpr
                                         ExecReadyInterpretedExpr
                                             ExecInitInterpreter
@@ -208,5 +206,5 @@ exec_simple_query
                 ExecEvalExprSwitchContext
 	                ExecInterpExprStillValid
 		                ExecInterpExpr
-                        EEO_DISPATCH, EEO_CASE, EEO_NEXT
+                        EEO_DISPATCH(EEO_SWITCH), EEO_CASE, EEO_NEXT
 ```
