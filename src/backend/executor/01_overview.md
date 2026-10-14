@@ -2,14 +2,12 @@
 
 ## 数据流转路径
 
-`Client<---->TCop<---->Portal<---->Executor<---->Access<---->[ Buffer/WAL ]<---->Storage`
+`Client <----> TCop <----> Portal <----> Executor <----> Access <----> [ Buffer/WAL ] <----> Storage`
 
 - **`Storage --> Access`**：数据从 **磁盘 Page**（二进制块）转换成了 **HeapTuple**（原始行）。
 - **`Access --> Executor`**：数据从 **物理行** 被包装进了 **TupleTableSlot**（统一的槽位，屏蔽了是索引行还是表行的差异）。
 - **`Executor --> Portal`**：数据经过计算，变成了 **最终结果行**。
 - **`Portal --> Client`**：数据被 `DestReceiver` 序列化为 **网络字节流**。
-
-## Portal 生命周期
 
 ## 执行器生命周期
 
@@ -19,7 +17,6 @@
 | Run    | `ExecutorRun`    | 循环拉取数据，逐行处理，发送给客户端               | `ExecProcNode`: `TupleTableSlot`, `ExprContext` |
 | Finish | `ExecutorFinish` | 执行排队的 AFTER 触发器，更新统计信息              | `AfterTriggerEndQuery`                          |
 | End    | `ExecutorEnd`    | 关闭文件/扫描描述符，销毁临时占用资源              | `ExecEndNode`                                   |
-
 
 ```cpp
 CreatePortal /* Create unnamed portal to run the query or queries in */
@@ -124,10 +121,10 @@ ExecProcNode - ExecSeqScan
 
 ## EState
 
-| 结构体            | 存在的层级 | 生命周期        | 核心协同作用              |
-| -------------- | ----- | ----------- | ------------------- |
-| _Portal_       | 顶层    | 会话级/Cursor级 | 管理查询执行的任务流          |
-| QueryDesc      | 执行前   | 执行周期级       | 封装执行器所需的全部入参、计划和快照  |
-| EState         | 执行期间  | 执行周期级       | 管理全局内存上下文、元组槽表和事务快照 |
-| PlanState      | 执行期间  | 执行周期级       | 算子执行算子，负责递归计算和状态维护  |
-| TupleTableSlot | 算子间   | 算子执行级       | 算子间数据传递的容器，减少拷贝开销   |
+| 结构体         | 存在的层级 | 生命周期        | 核心协同作用                           |
+| -------------- | ---------- | --------------- | -------------------------------------- |
+| _Portal_       | 顶层       | 会话级/Cursor级 | 管理查询执行的任务流                   |
+| QueryDesc      | 执行前     | 执行周期级      | 封装执行器所需的全部入参、计划和快照   |
+| EState         | 执行期间   | 执行周期级      | 管理全局内存上下文、元组槽表和事务快照 |
+| PlanState      | 执行期间   | 执行周期级      | 算子执行算子，负责递归计算和状态维护   |
+| TupleTableSlot | 算子间     | 算子执行级      | 算子间数据传递的容器，减少拷贝开销     |
