@@ -1,5 +1,30 @@
 # TupleTableSlot
 
+## Overview
+
+> src/include/access/tableam.h
+
+```c
+typedef struct TableAmRoutine
+{
+    /*
+	 * Return slot implementation suitable for storing a tuple of this AM.
+	 */
+	const TupleTableSlotOps *(*slot_callbacks) (Relation rel);
+
+    /* ... */
+
+	/*
+	 * Return next tuple from `scan`, store in slot.
+	 */
+	bool		(*scan_getnextslot) (TableScanDesc scan,
+									 ScanDirection direction,
+									 TupleTableSlot *slot);
+    
+    /* ... */
+}
+```
+
 > src/include/executor/tuptable.h
 
 ```c
@@ -27,45 +52,103 @@ typedef struct TupleTableSlot
 ## Slots
 
 ```c
-VirtualTupleTableSlot
-HeapTupleTableSlot
-BufferHeapTupleTableSlot
-MinimalTupleTableSlot
+/* ...
+ * 1. physical tuple in a disk buffer page (TTSOpsBufferHeapTuple)
+ * 2. physical tuple constructed in palloc'ed memory (TTSOpsHeapTuple)
+ * 3. "minimal" physical tuple constructed in palloc'ed memory
+ *    (TTSOpsMinimalTuple)
+ * 4. "virtual" tuple consisting of Datum/isnull arrays (TTSOpsVirtual)
+ * ...
+ */
 ```
 
 ```c
-const TupleTableSlotOps TTSOpsHeapTuple = {
-	.base_slot_size = sizeof(HeapTupleTableSlot),
-	.init = tts_heap_init,
-	.release = tts_heap_release,
-	.clear = tts_heap_clear,
-	.getsomeattrs = tts_heap_getsomeattrs,
-	.getsysattr = tts_heap_getsysattr,
-	.materialize = tts_heap_materialize,
-	.copyslot = tts_heap_copyslot,
-	.get_heap_tuple = tts_heap_get_heap_tuple,
+/*
+ * Predefined TupleTableSlotOps for various types of TupleTableSlotOps. The
+ * same are used to identify the type of a given slot.
+ */
+extern PGDLLIMPORT const TupleTableSlotOps TTSOpsVirtual;
+extern PGDLLIMPORT const TupleTableSlotOps TTSOpsHeapTuple;
+extern PGDLLIMPORT const TupleTableSlotOps TTSOpsMinimalTuple;
+extern PGDLLIMPORT const TupleTableSlotOps TTSOpsBufferHeapTuple;
+```
 
-	/* A heap tuple table slot can not "own" a minimal tuple. */
+Virtual functions
+
+```c
+/* routines for a TupleTableSlot implementation */
+struct TupleTableSlotOps
+```
+
+## BufferHeapTupleTableSlot
+
+```c
+const TupleTableSlotOps TTSOpsBufferHeapTuple = {
+	.base_slot_size = sizeof(BufferHeapTupleTableSlot),
+	.init = tts_buffer_heap_init,
+	.release = tts_buffer_heap_release,
+	.clear = tts_buffer_heap_clear,
+	.getsomeattrs = tts_buffer_heap_getsomeattrs,
+	.getsysattr = tts_buffer_heap_getsysattr,
+	.materialize = tts_buffer_heap_materialize,
+	.copyslot = tts_buffer_heap_copyslot,
+	.get_heap_tuple = tts_buffer_heap_get_heap_tuple,
+
+	/* A buffer heap tuple table slot can not "own" a minimal tuple. */
 	.get_minimal_tuple = NULL,
-	.copy_heap_tuple = tts_heap_copy_heap_tuple,
-	.copy_minimal_tuple = tts_heap_copy_minimal_tuple
+	.copy_heap_tuple = tts_buffer_heap_copy_heap_tuple,
+	.copy_minimal_tuple = tts_buffer_heap_copy_minimal_tuple
 };
 ```
 
+## ScanState
+
+```c
+typedef struct ScanState
+{
+	PlanState	ps;				/* its first field is NodeTag */
+	Relation	ss_currentRelation;
+	struct TableScanDescData *ss_currentScanDesc;
+	TupleTableSlot *ss_ScanTupleSlot;
+} ScanState;
+```
+
 ## call stack
+
+`select * from tb;`
 
 ```c
 exec_simple_query
     PortalStart | ExecutorStart | standard_ExecutorStart
         InitPlan | ExecInitNode
             ExecInitSeqScan
-                ExecAssignExprContext
-                    planstate->ps_ExprContext = CreateExprContext(estate);
+                scanstate->ss.ps.ExecProcNode = ExecSeqScan;
                 ExecInitScanTupleSlot
                     scanstate->ss_ScanTupleSlot = ExecAllocTableSlot()
                         MakeTupleTableSlot
-                ExecAssignScanProjectionInfo | ExecConditionalAssignProjectionInfo
-                    ExecInitResultSlot
-                        planstate->ps_ResultTupleSlot = ExecAllocTableSlot()
-                    ExecAssignProjectionInfo
+                            [ BufferHeapTupleTableSlot | Datum ... | Bool ... ]
+    PortalRun
+        PortalRunSelect
+            ExecutorRun | standard_ExecutorRun
+                ExecutePlan
+                    ExecProcNode /* Execute the plan and obtain a tuple */
+                        ExecSeqScan | ExecScan /* execScan.c */
+                            ExecScanFetch
+                                SeqNext
+                                    table_scan_getnextslot | TableAmRoutine::scan_getnextslot
+                                        heap_getnextslot
+                                            heapgettup_pagemode
+                                                HeapTuple	tuple = &(scan->rs_ctup);
+                                                tuple->t_data = (HeapTupleHeader) PageGetItem(page, lpp);
+			                                    tuple->t_len = ItemIdGetLength(lpp);
+                                            ExecStoreBufferHeapTuple(&scan->rs_ctup, slot, scan->rs_cbuf)
+                                                bslot->base.tuple = tuple;
+                    dest->receiveSlot = printtup
+                        slot_getallattrs /* forces all the entries of the slot's Datum/isnull arrays to be valid */
+                            slot_getsomeattrs |  slot_getsomeattrs_int
+                                slot->tts_ops->getsomeattrs
+                                    tts_buffer_heap_getsomeattrs
+                                        slot_deform_heap_tuple /* extract data from the slot's physical tuple */
+                                            fetch_att
+                        /* send the attributes of this tuple */
 ```
