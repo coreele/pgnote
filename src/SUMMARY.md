@@ -39,8 +39,8 @@
 
 - [executor](./backend/executor/executor.md)
   - [README](./backend/executor/00_readme.md)
-  - [Pipeline](./backend/executor/01_overview.md)
-  - [State](./backend/executor/02_state.md)
+  - [Overview](./backend/executor/01_overview.md)
+  - [TupleTableSlot](./backend/executor/tts.md)
   - [WHERE](./backend/executor/03_expr.md)
 - [node](./backend/node/node.md)
   - [List](./backend/node/list.md)
