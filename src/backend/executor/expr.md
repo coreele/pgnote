@@ -1,4 +1,4 @@
-# WHERE
+# Expr
 
 只追 `WHERE`。同一条条件从 Parse 到 Exec 换了三次形态：语法树、带类型的表达式、隐式 AND 列表。Init 把列表编译成 step，Run 对每一行解释执行。
 

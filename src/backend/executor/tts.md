@@ -2,21 +2,13 @@
 
 ## Overview
 
-> src/include/access/tableam.h
-
 ```c
 typedef struct TableAmRoutine
 {
-    /*
-	 * Return slot implementation suitable for storing a tuple of this AM.
-	 */
+     /* Return slot implementation suitable for storing a tuple of this AM. */
 	const TupleTableSlotOps *(*slot_callbacks) (Relation rel);
 
-    /* ... */
-
-	/*
-	 * Return next tuple from `scan`, store in slot.
-	 */
+	/* Return next tuple from `scan`, store in slot. */
 	bool		(*scan_getnextslot) (TableScanDesc scan,
 									 ScanDirection direction,
 									 TupleTableSlot *slot);
@@ -99,18 +91,6 @@ const TupleTableSlotOps TTSOpsBufferHeapTuple = {
 	.copy_heap_tuple = tts_buffer_heap_copy_heap_tuple,
 	.copy_minimal_tuple = tts_buffer_heap_copy_minimal_tuple
 };
-```
-
-## ScanState
-
-```c
-typedef struct ScanState
-{
-	PlanState	ps;				/* its first field is NodeTag */
-	Relation	ss_currentRelation;
-	struct TableScanDescData *ss_currentScanDesc;
-	TupleTableSlot *ss_ScanTupleSlot;
-} ScanState;
 ```
 
 ## call stack
