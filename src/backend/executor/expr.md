@@ -1,8 +1,30 @@
 # Expr
 
+> `src/backend/executor/execExpr.c`
+> `src/backend/executor/execExprInterp.c`
+
+`select 1 + 1`
+
+```c
+exec_simple_query
+    pg_plan_queries | pg_plan_query | planner | ...
+        simplify_function | evaluate_function | evaluate_expr
+            ExecInitExpr
+                ExecInitExprRec
+                ExprEvalPushStep
+                ExecReadyExpr
+                    ExecReadyInterpretedExpr
+                        state->evalfunc = ExecInterpExprStillValid;
+                        state->evalfunc_private = (void *) ExecInterpExpr;
+            ExecEvalExprSwitchContext
+                ExecInterpExprStillValid
+                    ExecInterpExpr
+                        EEO_DISPATCH | EEO_CASE | EEO_NEXT
+```
+
 `select * from tb where a = 1`
 
-```
+```c
 exec_simple_query
     PortalStart | ExecutorStart | standard_ExecutorStart
         InitPlan
@@ -26,7 +48,7 @@ exec_simple_query
                                 state->evalfunc_private = (void *) ExecInterpExpr;
     PortalRun | PortalRunSelect | ExecutorRun | standard_ExecutorRun
         ExecutePlan | ExecProcNode | ExecProcNodeFirst
-            ExecSeqScan | ExecScan | ExecProject
+            ExecSeqScan | ExecScan | ExecQual
                 ExecEvalExprSwitchContext
 	                ExecInterpExprStillValid
 		                ExecInterpExpr
