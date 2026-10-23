@@ -52,17 +52,11 @@ typedef struct TupleTableSlot
  * 4. "virtual" tuple consisting of Datum/isnull arrays (TTSOpsVirtual)
  * ...
  */
-```
-
-```c
-/*
- * Predefined TupleTableSlotOps for various types of TupleTableSlotOps. The
- * same are used to identify the type of a given slot.
- */
-extern PGDLLIMPORT const TupleTableSlotOps TTSOpsVirtual;
-extern PGDLLIMPORT const TupleTableSlotOps TTSOpsHeapTuple;
-extern PGDLLIMPORT const TupleTableSlotOps TTSOpsMinimalTuple;
-extern PGDLLIMPORT const TupleTableSlotOps TTSOpsBufferHeapTuple;
+ 
+ typedef struct BufferHeapTupleTableSlot
+ typedef struct HeapTupleTableSlot
+ typedef struct MinimalTupleTableSlot
+ typedef struct VirtualTupleTableSlot
 ```
 
 Virtual functions
@@ -70,27 +64,6 @@ Virtual functions
 ```c
 /* routines for a TupleTableSlot implementation */
 struct TupleTableSlotOps
-```
-
-## BufferHeapTupleTableSlot
-
-```c
-const TupleTableSlotOps TTSOpsBufferHeapTuple = {
-	.base_slot_size = sizeof(BufferHeapTupleTableSlot),
-	.init = tts_buffer_heap_init,
-	.release = tts_buffer_heap_release,
-	.clear = tts_buffer_heap_clear,
-	.getsomeattrs = tts_buffer_heap_getsomeattrs,
-	.getsysattr = tts_buffer_heap_getsysattr,
-	.materialize = tts_buffer_heap_materialize,
-	.copyslot = tts_buffer_heap_copyslot,
-	.get_heap_tuple = tts_buffer_heap_get_heap_tuple,
-
-	/* A buffer heap tuple table slot can not "own" a minimal tuple. */
-	.get_minimal_tuple = NULL,
-	.copy_heap_tuple = tts_buffer_heap_copy_heap_tuple,
-	.copy_minimal_tuple = tts_buffer_heap_copy_minimal_tuple
-};
 ```
 
 ## call stack
@@ -131,4 +104,12 @@ exec_simple_query
                                         slot_deform_heap_tuple /* extract data from the slot's physical tuple */
                                             fetch_att
                         /* send the attributes of this tuple */
+```
+
+ExecMaterializeSlot
+
+```sql
+create table tb(a int, b text, c int, d int);
+insert into tb values (1, 'aaaaaaaaaa', 1, 1), (2, 'bbbbbbbbbb', 2, 2);
+DELETE FROM tb where a = 1 RETURNING b, d;
 ```

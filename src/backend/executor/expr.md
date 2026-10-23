@@ -3,6 +3,8 @@
 > `src/backend/executor/execExpr.c`
 > `src/backend/executor/execExprInterp.c`
 
+## Const
+
 `select 1 + 1`
 
 ```c
@@ -21,6 +23,8 @@ exec_simple_query
                     ExecInterpExpr
                         EEO_DISPATCH | EEO_CASE | EEO_NEXT
 ```
+
+## Where
 
 `select * from tb where a = 1`
 
@@ -53,4 +57,33 @@ exec_simple_query
 	                ExecInterpExprStillValid
 		                ExecInterpExpr
                             EEO_DISPATCH(EEO_SWITCH), EEO_CASE, EEO_NEXT
+```
+
+## Project
+
+```sql
+drop table if exists tb;
+create table tb(a int, b text, c int, d int);
+insert into tb values (1, 'aaaaaaaaaa', 1, 1);
+select b, d from tb;
+```
+
+```c
+exec_simple_query
+	PortalStart | ExecutorStart | standard_ExecutorStart
+		InitPlan | ExecInitNode
+			ExecInitSeqScan
+				ExecAssignExprContext
+				ExecInitScanTupleSlot
+					scanstate->ss_ScanTupleSlot = ExecAllocTableSlot
+						MakeTupleTableSlot
+							BufferHeapTupleTableSlot /* heap tuple residing in a buffer */
+				ExecAssignScanProjectionInfo | ...
+					ExecInitResultSlot
+						planstate->ps_ResultTupleSlot = ExecAllocTableSlot
+	PortalRun | ... | ExecutePlan | ...
+		ExecScan
+			ExecScanFetch | SeqNext
+			ExecProject | ExecInterpExpr
+				[EEOP_SCAN_FETCHSOME, EEOP_ASSIGN_SCAN_VAR]
 ```
