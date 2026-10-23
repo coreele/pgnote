@@ -32,10 +32,11 @@
   - [Overview](./backend/parser/00_overview.md)
   - [Analyze](./backend/parser/01_analyze.md)
 
-<!--
+
 - [optimizer](./backend/optimizer/optimizer.md)
-  - [Overview](./backend/optimizer/00_overview.md)
--->
+  - [README](./backend/optimizer/00_readme.md)
+  - [Overview](./backend/optimizer/overview.md)
+
 
 - [executor](./backend/executor/executor.md)
   - [README](./backend/executor/00_readme.md)
