@@ -1,8 +1,8 @@
 # Parser
 
-1. 相关函数: `pg_parse_query`
+相关函数: `pg_parse_query`
 
-1. 核心结构
+核心结构
 
 `RawStmt`: container for any one statement's raw parse tree
 

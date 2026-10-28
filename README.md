@@ -22,8 +22,6 @@ mdbook build          # 输出到 book/（已在 .gitignore）
 
 - https://www.interdb.jp/pg/index.html
 - https://deepwiki.com/postgres/postgres/1-overview
-- https://roadmap.sh/postgresql-dba
-- https://postgrespro.com/blog/pgsql/3994098
 
 ---
 

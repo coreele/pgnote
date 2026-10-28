@@ -10,8 +10,6 @@
 
 > https://www.interdb.jp/pg/pgsql02/01.html
 
-## PG 内核全景
-
 - **控制**：分析, 优化, 执行
 - **数据**：访问方法(Heap/Index, **Buffer Cache**, 物理磁盘)
 - **事务**：Lock Manager, WAL/CLOG, MVCC (Visible check)

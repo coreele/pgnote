@@ -4,7 +4,6 @@
 
 - pg 官方仓库：https://git.postgresql.org/git/postgresql.git
 - github 仓库：https://github.com/postgres/postgres.git
-- gitee 仓库：https://gitee.com/mirrors/PostgreSQL.git
 
 代码目录
 
