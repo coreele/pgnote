@@ -13,17 +13,6 @@
 
 ---
 
-# Traces
-
-- [Query Overview](./traces/00_query_overview.md)
-- [Insert](./traces/01_insert.md)
-- [Delete](./traces/02_delete.md)
-- [Update](./traces/03_update.md)
-- [Crash Recovery](./traces/04_crash_recovery.md)
-- [VM](./traces/05_vm.md)
-
----
-
 # backend
 
 - [tcop](./backend/tcop/tcop.md)
@@ -31,13 +20,9 @@
 - [parser](./backend/parser/parser.md)
   - [Overview](./backend/parser/00_overview.md)
   - [Analyze](./backend/parser/01_analyze.md)
-
-
 - [optimizer](./backend/optimizer/optimizer.md)
   - [README](./backend/optimizer/00_readme.md)
   - [Overview](./backend/optimizer/overview.md)
-
-
 - [executor](./backend/executor/executor.md)
   - [README](./backend/executor/00_readme.md)
   - [Overview](./backend/executor/01_overview.md)
@@ -111,6 +96,17 @@
   - [README](./backend/replication/00_readme.md)
   - [Streaming Replication & Log Decoding](./backend/replication/01_streaming_replication.md)
   - [Replication Slot & Timeline](./backend/replication/02_replication_slot_timeline.md)
+
+---
+
+# Traces
+
+- [Query Overview](./traces/00_query_overview.md)
+- [Insert](./traces/01_insert.md)
+- [Delete](./traces/02_delete.md)
+- [Update](./traces/03_update.md)
+- [Crash Recovery](./traces/04_crash_recovery.md)
+- [VM](./traces/05_vm.md)
 
 ---
 
