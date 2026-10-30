@@ -1,6 +1,6 @@
 # Cost
 
-参考文档: https://www.interdb.jp/pg/pgsql03/index.html
+参考文档: [https://www.interdb.jp/pg/pgsql03/02.html](https://www.interdb.jp/pg/pgsql03/02.html)
 
 ```sql
 DROP TABLE IF EXISTS tbl;
@@ -37,6 +37,7 @@ pg_plan_query | planner | standard_planner | subquery_planner
                 Path *pathnode = makeNode(Path);
                 pathnode->pathtype = T_SeqScan;
                 cost_seqscan
+	                path->total_cost = startup_cost + cpu_run_cost + disk_run_cost;
 ```
 
 ## IndexScan
@@ -47,4 +48,32 @@ EXPLAIN SELECT id, data FROM tbl WHERE data <= 240;
 ---------------------------------------------------------------------------
  Index Scan using tbl_data_idx on tbl  (cost=0.29..13.49 rows=240 width=8)
    Index Cond: (data <= 240)
+```
+
+## QualCost
+
+> src/include/nodes/pathnodes.h
+
+```c
+/*
+ * The cost estimate produced by cost_qual_eval() includes both a one-time
+ * (startup) cost, and a per-tuple cost.
+ */
+typedef struct QualCost
+{
+	Cost		startup;		/* one-time cost */
+	Cost		per_tuple;		/* per-evaluation cost */
+} QualCost;
+```
+
+
+```sql
+postgres=# EXPLAIN SELECT data + 1 FROM tbl
+WHERE id <= 8000 AND now() > '1990-01-01';
+                                   QUERY PLAN                                    
+---------------------------------------------------------------------------------
+ Result  (cost=0.01..190.00 rows=8000 width=4)
+   One-Time Filter: (now() > '1990-01-01 00:00:00+08'::timestamp with time zone)
+   ->  Seq Scan on tbl  (cost=0.01..170.00 rows=8000 width=4)
+         Filter: (id <= 8000)
 ```

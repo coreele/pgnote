@@ -2,42 +2,19 @@
 
 ## Overview
 
-| 层    | 顶层类型                              | 谁产出              | 谁消费   | 生命周期                       |
-| ----- | ------------------------------------- | ------------------- | -------- | ------------------------------ |
-| Query | `Query`                               | analyzer + rewriter | planner  | 整个规划期                     |
-| Path  | `PlannerInfo` / `RelOptInfo` / `Path` | planner             | planner  | 整个规划期，出 plan 后丢弃     |
-| Plan  | `PlannedStmt` / `Plan`                | `create_plan`       | executor | 出 plan 后长期持有（计划缓存） |
-
-## Explain
-
-```sql
-drop table if exists tb;
-create table tb (a int, b bigint);
-insert into tb select n, n from generate_series(1, 100000) as n;
-create index idx on tb(a);
-analyze tb;
-
-explain select * from tb where a = 5432;
-```
+| 层        | 顶层类型                                  | 消费          | 文件           |
+| -------- | ------------------------------------- | ----------- | ------------ |
+| Query    | `Query`                               | optimizer   | parsenodes.h |
+| **Path** | `PlannerInfo` / `RelOptInfo` / `Path` | create_plan | pathnodes.h  |
+| Plan     | `PlannedStmt` / `Plan`                | executor    | plannodes.h  |
 
 ```text
- Index Scan using idx on tb  (cost=0.29..8.31 rows=1 width=12)
-   Index Cond: (a = 5432)
+SQL ---- Query  ---- Path(s)  ---- Plan
 ```
 
-| EXPLAIN 片段      | 结构体字段                                        |
-| ----------------- | ------------------------------------------------- |
-| `tb`              | `RelOptInfo`（`RELOPT_BASEREL`）/ `RangeTblEntry` |
-| `using idx`       | `IndexPath.indexinfo` → `IndexOptInfo.indexoid`   |
-| `cost=0.29..8.31` | `Path.startup_cost` / `Path.total_cost`           |
-| `rows=1`          | `Path.rows`                                       |
-| `width=12`        | `Path.pathtarget->width` ← `RelOptInfo.reltarget` |
-| `Index Cond`      | `IndexPath.indexquals` → `IndexScan.indexqual`    |
-| `Index Scan`      | `Path.pathtype = T_IndexScan` → `Plan.type`       |
+## Path
 
 ## `PlannerInfo`
-
-一条查询一个，`standard_planner()` 里创建。
 
 ```c
 typedef struct PlannerInfo
@@ -65,26 +42,13 @@ typedef struct PlannerInfo
 } PlannerInfo;
 ```
 
-upper relation
-
-join 之后不是"一串算子"，而是逐层叠加的 upper relation：
-
-```text
-base rel ──join──> join rel
-                      │
-    UPPERREL_PARTIAL_GROUP_AGG    并行部分聚合
-    UPPERREL_GROUP_AGG            GROUP BY / 聚合
-    UPPERREL_WINDOW               窗口函数
-    UPPERREL_DISTINCT             DISTINCT
-    UPPERREL_ORDERED              ORDER BY
-    UPPERREL_FINAL                LIMIT / FOR UPDATE
-```
-
-`fetch_upper_rel(root, UPPERREL_FINAL, NULL)` 取最后一层，`get_cheapest_fractional_path()` 在它上面选路径。
-
 ## `RelOptInfo`
 
-「一个关系 + 它的全部候选路径」。base rel 和 join rel 都是它。
+PostgreSQL 查询优化的核心数据结构，用于表示查询规划过程中出现的所有类型的关系。
+- 基础关系：表示 FROM 子句中的单表、子查询或函数
+- 连接关系：表示两个或多个基础关系连接后的结果
+- 其他关系：表示追加关系成员这类特殊关系类型
+- 上层关系：表示扫描/连接之后的处理步骤，例如聚合、排序等
 
 ```c
 typedef struct RelOptInfo
@@ -107,28 +71,20 @@ typedef struct RelOptInfo
 } RelOptInfo;
 ```
 
-## `Path`
+scan/join 之后不是"一串算子"，而是逐层叠加的 upper relation：
 
 ```text
-Path
-├── IndexPath
-├── BitmapHeapPath
-│   └── BitmapAndPath / BitmapOrPath（子节点是 BitmapIndexPath）
-├── TidPath / SubqueryPath / ForeignPath / CustomPath
-│
-├── JoinPath
-│   ├── NestPath
-│   ├── MergePath
-│   └── HashPath
-│
-├── AggPath / GroupingSetsPath
-├── SortPath / IncrementalSortPath
-├── AppendPath / MergeAppendPath
-├── GatherPath / GatherMergePath
-└── MaterialPath / MemoizePath / ResultPath / ProjectSetPath
+    UPPERREL_FINAL                LIMIT / FOR UPDATE
+	UPPERREL_ORDERED              ORDER BY
+	UPPERREL_DISTINCT             DISTINCT
+	UPPERREL_WINDOW               窗口函数
+	UPPERREL_GROUP_AGG            GROUP BY / 聚合
+	UPPERREL_PARTIAL_GROUP_AGG    并行部分聚合
+	        │
+base/join relation
 ```
 
-`Path` 只描述「怎么取数、多少行、多少钱」，**不含表达式**；表达式在 `pathtarget` 和子类的 qual 字段里。
+## `Path`
 
 ```c
 typedef struct Path
@@ -147,17 +103,21 @@ typedef struct Path
 } Path;
 ```
 
-## 关键结构对照
+`Path` 只描述「怎么取数、多少行、多少钱」，**不含表达式**；表达式在 `pathtarget` 和子类的 qual 字段里。
 
-| 结构          | 回答什么问题       | 定义位置            |
-| ------------- | ------------------ | ------------------- |
-| `PlannerInfo` | 这条查询规划到哪了 | `nodes/pathnodes.h` |
-| `RelOptInfo`  | 这个关系有哪些走法 | `nodes/pathnodes.h` |
-| `Path`        | 一种走法多少钱     | `nodes/pathnodes.h` |
-
-## 待补
-
-- [ ] `PathTarget` 为什么挂在 path 上，而不是 rel 上
-- [ ] `ParamPathInfo`：参数化路径怎么表示
-- [ ] `PlannerGlobal` vs `PlannerInfo` 的分工（子查询为何共用 glob）
-- [ ] `RELOPT_OTHER_MEMBER_REL`：继承 / 分区场景
+```text
+Path(used as-is for sequential-scan)
+├── IndexPath
+├── BitmapHeapPath
+│   └── BitmapAndPath / BitmapOrPath（子节点是 BitmapIndexPath）
+├── TidPath / SubqueryPath / ForeignPath / CustomPath
+├── JoinPath
+│   ├── NestPath
+│   ├── MergePath
+│   └── HashPath
+├── AggPath / GroupingSetsPath
+├── SortPath / IncrementalSortPath
+├── AppendPath / MergeAppendPath
+├── GatherPath / GatherMergePath
+└── MaterialPath / MemoizePath / ResultPath / ProjectSetPath
+```

@@ -19,9 +19,9 @@ standard_planner
             create_distinct_paths
             create_ordered_paths
         set_cheapest
-	fetch_upper_rel               /* upper rel */
-    get_cheapest_fractional_path
-    create_plan -> top_plan
+	fetch_upper_rel               /* UPPERREL_FINAL */
+    get_cheapest_fractional_path  /* Find the cheapest path */
+    create_plan -> top_plan       /* Creates the access plan */
     result = makeNode(PlannedStmt);
     result->planTree = top_plan;
 ```
