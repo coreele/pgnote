@@ -1,18 +1,12 @@
 # Structure
 
-## Overview
+## Level
 
-| 层        | 顶层类型                                  | 消费          | 文件           |
+| 层       | 顶层类型                              | 消费        | 文件         |
 | -------- | ------------------------------------- | ----------- | ------------ |
 | Query    | `Query`                               | optimizer   | parsenodes.h |
 | **Path** | `PlannerInfo` / `RelOptInfo` / `Path` | create_plan | pathnodes.h  |
 | Plan     | `PlannedStmt` / `Plan`                | executor    | plannodes.h  |
-
-```text
-SQL ---- Query  ---- Path(s)  ---- Plan
-```
-
-## Path
 
 ## `PlannerInfo`
 
@@ -45,6 +39,7 @@ typedef struct PlannerInfo
 ## `RelOptInfo`
 
 PostgreSQL 查询优化的核心数据结构，用于表示查询规划过程中出现的所有类型的关系。
+
 - 基础关系：表示 FROM 子句中的单表、子查询或函数
 - 连接关系：表示两个或多个基础关系连接后的结果
 - 其他关系：表示追加关系成员这类特殊关系类型

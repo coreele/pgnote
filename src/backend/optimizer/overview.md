@@ -1,6 +1,26 @@
 # Planner
 
-## Call Stack
+```text
+SQL ---- Query  ---- Path(s)  ---- Plan ---- PlanState
+```
+
+```c
+exec_simple_query
+	pg_parse_query /* SQL -> Query */
+	pg_analyze_and_rewrite_fixedparams /* Analyze Query */
+	pg_plan_queries
+		pg_plan_query
+			standard_planner /* Query -> Plan */
+	PortalStart
+		ExecutorStart | standard_ExecutorStart
+			InitPlan /* Plan -> PlanState */
+	PortalRun
+		PortalRunSelect
+			ExecutorRun | standard_ExecutorRun
+				ExecutePlan /* PlanState */
+```
+
+## Planner
 
 ```c
 standard_planner
@@ -25,4 +45,3 @@ standard_planner
     result = makeNode(PlannedStmt);
     result->planTree = top_plan;
 ```
-
