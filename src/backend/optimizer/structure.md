@@ -79,6 +79,26 @@ scan/join 之后不是"一串算子"，而是逐层叠加的 upper relation：
 base/join relation
 ```
 
+```c
+/*
+ * This enum identifies the different types of "upper" (post-scan/join)
+ * relations that we might deal with during planning.
+ */
+typedef enum UpperRelationKind
+{
+	UPPERREL_SETOP,				/* result of UNION/INTERSECT/EXCEPT, if any */
+	UPPERREL_PARTIAL_GROUP_AGG, /* result of partial grouping/aggregation, if
+								 * any */
+	UPPERREL_GROUP_AGG,			/* result of grouping/aggregation, if any */
+	UPPERREL_WINDOW,			/* result of window functions, if any */
+	UPPERREL_PARTIAL_DISTINCT,	/* result of partial "SELECT DISTINCT", if any */
+	UPPERREL_DISTINCT,			/* result of "SELECT DISTINCT", if any */
+	UPPERREL_ORDERED,			/* result of ORDER BY, if any */
+	UPPERREL_FINAL				/* result of any remaining top-level actions */
+	/* NB: UPPERREL_FINAL must be last enum entry; it's used to size arrays */
+} UpperRelationKind;
+```
+
 ## `Path`
 
 ```c

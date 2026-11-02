@@ -22,6 +22,8 @@ exec_simple_query
 
 ## Planner
 
+`FROM(WHERE)` -> `GROUP BY(HAVING)` -> `WINDOW` -> `DISTINCT` -> `ORDER BY` -> `LIMIT`
+
 ```c
 standard_planner
     makeNode(PlannerGlobal)
