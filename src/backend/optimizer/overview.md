@@ -35,7 +35,13 @@ standard_planner
             query_planner /* FROM/WHERE clauses */
 	            /* ... */
                 make_one_rel
-                    make_rel_from_joinlist /* Generate access paths for each base rel */
+	                set_base_rel_pathlists /* Generate access paths for each base rel */
+		                set_rel_pathlist
+			                set_plain_rel_pathlist
+				                create_seqscan_path
+				                create_index_paths 
+				                create_tidscan_paths
+                    make_rel_from_joinlist /* Generate access paths for the entire join tree */
             create_grouping_paths
             create_window_paths
             create_distinct_paths

@@ -19,6 +19,18 @@ Indexes:
     "tbl_data_idx" btree (data)
 ```
 
+```c
+make_one_rel
+	set_base_rel_pathlists
+		set_rel_pathlist
+			set_plain_rel_pathlist
+				create_seqscan_path
+				create_index_paths
+					foreach(lc, rel->indexlist)
+						get_index_paths
+				create_tidscan_paths
+```
+
 ## SeqScan
 
 ```sql
