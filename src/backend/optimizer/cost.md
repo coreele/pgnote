@@ -45,11 +45,12 @@ EXPLAIN SELECT * FROM tbl WHERE id <= 8000;
 pg_plan_query | planner | standard_planner | subquery_planner
     grouping_planner | query_planner
         make_one_rel | set_base_rel_pathlists | set_rel_pathlist
-            create_seqscan_path
-                Path *pathnode = makeNode(Path);
-                pathnode->pathtype = T_SeqScan;
-                cost_seqscan
-	                path->total_cost = startup_cost + cpu_run_cost + disk_run_cost;
+	        set_plain_rel_pathlist
+	            create_seqscan_path
+	                Path *pathnode = makeNode(Path);
+	                pathnode->pathtype = T_SeqScan;
+	                cost_seqscan
+		                path->total_cost = startup_cost + cpu_run_cost + disk_run_cost;
 ```
 
 ## IndexScan
@@ -62,6 +63,23 @@ EXPLAIN SELECT id, data FROM tbl WHERE data <= 240;
    Index Cond: (data <= 240)
 ```
 
+```c
+pg_plan_query | planner | standard_planner | subquery_planner
+    grouping_planner | query_planner
+        make_one_rel | set_base_rel_pathlists | set_rel_pathlist
+	        set_plain_rel_pathlist
+		        create_seqscan_path
+		        create_index_paths /* Generate all interesting index paths for the given relation */
+			        foreach(lc, rel->indexlist)
+				        get_index_paths /* Build index paths from the restriction clauses */
+					        build_index_paths /* Build simple index paths using the clauses */
+						        create_index_path
+							        cost_index
+								        amcostestimate
+								        clamp_row_est /* estimate number of main-table tuples fetched */
+								        get_tablespace_page_costs
+								        cost_qual_eval
+```
 ## QualCost
 
 > src/include/nodes/pathnodes.h
