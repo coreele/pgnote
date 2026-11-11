@@ -80,6 +80,9 @@ pg_plan_query | planner | standard_planner | subquery_planner
 								        get_tablespace_page_costs
 								        cost_qual_eval
 ```
+
+![](assets/index_cost.png)
+
 ## QualCost
 
 > src/include/nodes/pathnodes.h
