@@ -83,6 +83,46 @@ pg_plan_query | planner | standard_planner | subquery_planner
 
 ![](assets/index_cost.png)
 
+
+## Sort
+
+```sql
+postgres=# EXPLAIN SELECT id, data FROM tbl WHERE data <= 240 ORDER BY id;
+                                   QUERY PLAN                                    
+---------------------------------------------------------------------------------
+ Sort  (cost=22.97..23.57 rows=240 width=8)
+   Sort Key: id
+   ->  Index Scan using tbl_data_idx on tbl  (cost=0.29..13.49 rows=240 width=8)
+         Index Cond: (data <= 240)
+```
+
+```c
+grouping_planner
+	query_planner
+		make_one_rel
+			set_base_rel_pathlists
+				set_rel_pathlist
+					set_plain_rel_pathlist
+						create_seqscan_path
+						create_index_paths
+						create_tidscan_paths
+					set_cheapest
+						compare_path_costs(cheapest_startup_path, path, STARTUP_COST);
+						compare_path_costs(cheapest_total_path, path, TOTAL_COST);
+			make_rel_from_joinlist
+	create_ordered_paths
+		create_sort_path
+			cost_sort(sort_mem=work_mem=4096K)
+				cost_tuplesort
+					1. external merge sort
+					2. heap sort
+					3. quick sort
+						*startup_cost = comparison_cost * tuples * LOG2(tuples); /* 9.488 */
+					*run_cost = cpu_operator_cost * tuples; /* 0.599 */
+				startup_cost += input_cost; /* 9.488 + 13485 = 22.973 */
+				path->total_cost = startup_cost + run_cost; /* 22.973 + 0.599 = 23.573 */
+```
+
 ## QualCost
 
 > src/include/nodes/pathnodes.h
