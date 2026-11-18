@@ -40,19 +40,21 @@ planner / grouping_planner
 		        cost_seqscan()
 		populate_joinrel_with_paths
 			add_paths_to_joinrel(rel1, rel2)
-			    match_unsorted_outer(...)           // joinpath.c
-				    create_material_path(tbl_b SeqScan)
-				        cost_material()                 → cost=0..98
+			    match_unsorted_outer(...)
+				    create_material_path
+				        cost_material                   //  → cost=0..98
 				        // 含 input 73 + 2 * cpu_operator_cost * 5000
-				    try_nestloop_path(a SeqScan, Materialize(b))
-				        initial_cost_nestloop()
-					        cost_rescan(Materialize)      // 估第2次及以后扫内表
-				        add_path_precheck(...)
-				        create_nestloop_path(...)
-					        final_cost_nestloop()         → cost=0..750230.50
+				    try_nestloop_path
+					    /* gdb: 
+					     * p root->simple_rte_array[innerrel->relid]->eref->aliasname
+					     * p root->simple_rte_array[outerrel->relid]->eref->aliasname
+					     */
+				        initial_cost_nestloop
+					        cost_rescan
+				        add_path_precheck
+				        create_nestloop_path
+					        final_cost_nestloop        // → cost=0..750230.50
 				            cost_qual_eval(Join Filter: a.id=b.id)
-				            // ntuples = 10000 * 5000
-				            // run += (cpu_tuple_cost + qual) * ntuples
 			add_paths_to_joinrel(rel2, rel1)
 ```
 
@@ -60,4 +62,7 @@ planner / grouping_planner
 
 ## Merge Join
 
+
+
 ## Hash Join
+
