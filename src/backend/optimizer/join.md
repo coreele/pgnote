@@ -18,6 +18,7 @@ ANALYZE tbl_a;
 ANALYZE tbl_b;
 ANALYZE tbl_c;
 ```
+
 ## Nest Loop Join
 
 ### Materialized Nested Loop Join
@@ -28,7 +29,7 @@ SET enable_hashjoin = off;
 SET enable_mergejoin = off;
 
 EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id;
-                              QUERY PLAN                               
+                              QUERY PLAN
 -----------------------------------------------------------------------
  Nested Loop  (cost=0.00..750230.50 rows=5000 width=16)
    Join Filter: (a.id = b.id)
@@ -67,8 +68,9 @@ planner | grouping_planner | query_planner
 ### Indexed Nested Loop Join
 
 ```sql
+SET max_parallel_workers_per_gather = 0;
 EXPLAIN SELECT * FROM tbl_c AS c, tbl_b AS b WHERE c.id = b.id;
-                                   QUERY PLAN                                   
+                                   QUERY PLAN
 --------------------------------------------------------------------------------
  Nested Loop  (cost=0.29..1885.50 rows=5000 width=16)
    ->  Seq Scan on tbl_b b  (cost=0.00..73.00 rows=5000 width=8)
@@ -87,7 +89,7 @@ planner | grouping_planner | query_planner
 				consider_index_join_clauses | ...
 					get_index_paths | build_index_paths | create_index_path
 						cost_index // path->path.param_info != NULL
-			
+
 			create_seqscan_path | cost_seqscan    // tbl_b
 		populate_joinrel_with_paths
 			add_paths_to_joinrel(tbl_c, tbl_b)
@@ -103,6 +105,7 @@ planner | grouping_planner | query_planner
 					try_nestloop_path // seq_scan + memoize
 					try_nestloop_path // seq_scan + material
 ```
+
 ## Merge Join
 
 ```c
@@ -115,7 +118,7 @@ SET enable_hashjoin = off;
 SET enable_nestloop = off;
 
 EXPLAIN SELECT * FROM tbl_a AS a, tbl_b AS b WHERE a.id = b.id AND b.id < 1000;
-                               QUERY PLAN                                
+                               QUERY PLAN
 -------------------------------------------------------------------------
  Merge Join  (cost=944.66..984.64 rows=999 width=16)
    Merge Cond: (a.id = b.id)
@@ -142,7 +145,7 @@ ANALYZE tbl_x, tbl_y;
 SET max_parallel_workers_per_gather = 0;  -- 避免 Gather/并行
 
 EXPLAIN SELECT * FROM tbl_x AS x, tbl_y AS y WHERE x.id = y.id;
-                                   QUERY PLAN                                    
+                                   QUERY PLAN
 ---------------------------------------------------------------------------------
  Merge Join  (cost=10038.08..10150.58 rows=5000 width=2064)
    Merge Cond: (x.id = y.id)
@@ -154,6 +157,7 @@ EXPLAIN SELECT * FROM tbl_x AS x, tbl_y AS y WHERE x.id = y.id;
                Sort Key: y.id
                ->  Seq Scan on tbl_y y  (cost=0.00..765.00 rows=5000 width=1032)
 ```
+
 ## Hash Join
 
 https://www.interdb.jp/pg/pgsql03/05/03.html
