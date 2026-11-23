@@ -165,3 +165,11 @@ https://www.interdb.jp/pg/pgsql03/05/03.html
 ```c
 try_hashjoin_path
 ```
+
+## Structure
+
+```c
+typedef struct JoinPath; // Path
+
+typedef struct Join; // Plan
+```
