@@ -72,7 +72,7 @@ Index -> lp[1] LP_REDIRECT --> lp[2]
 
 索引始终指向 **root**（lp 1）。HOT 新版本没有自己的索引项：Index Scan 先落到 root，再沿 `t_ctid` 找到活元组；Seq Scan 扫每个 lp，不用跟链。
 
-v1 对所有快照都不可见后，prune 收回它的元组体，但 root 这个槽还在——改成 `LP_REDIRECT`（`lp_off` = 活元组的 OffsetNumber）。索引仍是 `(0,1)`。这就是 [update trace](../../../traces/03_update.md) 里 `VACUUM` 之后的页。
+v1 对所有快照都不可见后，prune 收回它的元组体，但 root 这个槽还在——改成 `LP_REDIRECT`（`lp_off` = 活元组的 OffsetNumber）。索引仍是 `(0,1)`。这就是 [update](./update.md) 里 `VACUUM` 之后的页。
 
 ---
 

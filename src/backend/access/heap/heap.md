@@ -60,7 +60,7 @@ PostgreSQL 默认表访问方法。上层只认 Table AM；本目录把 scan / D
 **CLUSTER / 表改写：**  
 `handler` → `rewriteheap`（保可见性与 ctid 链）→ 底层仍走堆写入路径
 
-可复现路径：[insert](../../../traces/01_insert.md) · [delete](../../../traces/02_delete.md) · [update](../../../traces/03_update.md) · [VM](../../../traces/05_vm.md)
+可复现路径：[insert](./insert.md) · [delete](./delete.md) · [update](./update.md) · [VM lab](./vm_lab.md)
 
 ## 4. 总结
 

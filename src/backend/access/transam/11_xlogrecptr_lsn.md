@@ -65,7 +65,7 @@ recptr = XLogInsert(...);
 PageSetLSN(page, recptr);
 ```
 
-`pageinspect` 里 `page_header.lsn` 应与对应 Heap WAL 记录的 `lsn` 一致（见 [pageinspect](../../../tools/01_pageinspect.md)、`traces/01_insert.md` 实验）。
+`pageinspect` 里 `page_header.lsn` 应与对应 Heap WAL 记录的 `lsn` 一致（见 [pageinspect](../../../tools/01_pageinspect.md)、[insert](../heap/insert.md) 实验）。
 
 ### 4.3 系统级 LSN 指针
 

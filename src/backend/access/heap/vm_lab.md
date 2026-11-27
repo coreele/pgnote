@@ -1,6 +1,6 @@
 # VM
 
-观测 Visibility Map 置位 / 清位，以及 Index Only Scan 是否因此免访堆。机制见 [Why & How: VM](../backend/access/heap/06_vm.md)；计划形态见 [Index Only Scan](../backend/access/nbtree/01_plan.md)。
+观测 Visibility Map 置位 / 清位，以及 Index Only Scan 是否因此免访堆。机制见 [Why & How: VM](./06_vm.md)；计划形态见 [Index Only Scan](../nbtree/01_plan.md)。
 
 - 调试：`VACUUM tb` 前后 `EXPLAIN (ANALYZE) SELECT a FROM tb WHERE a = 5432` 的 **Heap Fetches**
 - 依赖：contrib `pg_visibility`

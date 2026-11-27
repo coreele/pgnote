@@ -1,6 +1,6 @@
 # insert
 
-![](../backend/storage/assets/insert.svg)
+![](../../storage/assets/insert.svg)
 
 - 调试语句：`insert into tb values(1)`
 - insert 核心流程梳理，将从最简单的插入数据开始，逐步讨论事务、锁、资源管理等相关内容
@@ -132,7 +132,7 @@ finish_xact_command
 
 ## Hint Bits
 
-依赖扩展: [`pageinspect`](../tools/01_pageinspect.md): 用于直接查看页面和元组信息
+依赖扩展: [`pageinspect`](../../../tools/01_pageinspect.md): 用于直接查看页面和元组信息
 
 ```sql
 drop table if exists tb;

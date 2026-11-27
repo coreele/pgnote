@@ -1,6 +1,6 @@
 # crash recovery
 
-`CHECKPOINT` → `INSERT` + `COMMIT` → `kill -9` → 重启 Startup redo。机制见 [15_crash_recovery_redo](../backend/access/transam/15_crash_recovery_redo.md)；写路径见 [01_insert](./01_insert.md)。仅本地 crash recovery。
+`CHECKPOINT` → `INSERT` + `COMMIT` → `kill -9` → 重启 Startup redo。机制见 [15_crash_recovery_redo](./15_crash_recovery_redo.md)；写路径见 [insert](../heap/insert.md)。仅本地 crash recovery。
 
 ## 时序
 
@@ -30,7 +30,7 @@ StartupXLOG                          /* access/transam/xlog.c */
   // end-of-recovery checkpoint
 ```
 
-本场景常见：未刷脏 → `BLK_NEEDS_REDO`；崩溃前已 `CHECKPOINT`/刷页 → `BLK_DONE`；带 FPI APPLY → `BLK_RESTORED`。分支条件见 [15_crash_recovery_redo](../backend/access/transam/15_crash_recovery_redo.md) §4。
+本场景常见：未刷脏 → `BLK_NEEDS_REDO`；崩溃前已 `CHECKPOINT`/刷页 → `BLK_DONE`；带 FPI APPLY → `BLK_RESTORED`。分支条件见 [15_crash_recovery_redo](./15_crash_recovery_redo.md) §4。
 
 ## 实验
 
@@ -54,7 +54,7 @@ pg_waldump -s <redo_anchor> -n 20 -p $PGDATA/pg_wal
 
 ## gdb
 
-redo 在 Startup，不在 postmaster / backend。需 `-g` 构建（[Compile](../meta/compile.md)）。
+redo 在 Startup，不在 postmaster / backend。需 `-g` 构建（[Compile](../../../meta/compile.md)）。
 
 造数（可选）attach backend：`break heap_insert` / `XLogFlush`，跑完上节 SQL 后 `kill -9` postmaster。
 

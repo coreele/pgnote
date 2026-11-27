@@ -1,6 +1,6 @@
 # delete
 
-![](../backend/storage/assets/delete.svg)
+![](../../storage/assets/delete.svg)
 
 在 PG 中，所谓的**删除**其实是**标记死亡** + **空间异步回收**。
 
