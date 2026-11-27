@@ -1,6 +1,10 @@
+# Parallel
+
+## Case
+
 ```sql
 SET parallel_leader_participation = false;
-SET max_parallel_workers_per_gather = default;
+
 DROP TABLE IF EXISTS d;
 CREATE TABLE d (id double precision, data int);
 INSERT INTO d SELECT i::double precision, (random()*1000)::int FROM generate_series(1, 1000000) AS i;
@@ -8,31 +12,20 @@ ANALYZE;
 
 SET max_parallel_workers_per_gather = 0; -- 关闭并行
 EXPLAIN SELECT * FROM d WHERE id BETWEEN 1 AND 100;
-                                  QUERY PLAN                                   
+                                  QUERY PLAN
 -------------------------------------------------------------------------------
  Seq Scan on d  (cost=0.00..20406.00 rows=1 width=12)
    Filter: ((id >= '1'::double precision) AND (id <= '100'::double precision))
-   
-   
-SET max_parallel_workers_per_gather = default; -- 开启并行 2
+
+
+SET max_parallel_workers_per_gather = default; -- 开启并行 default=2
 EXPLAIN SELECT * FROM d WHERE id BETWEEN 1 AND 100;
-                                     QUERY PLAN                                      
+                                     QUERY PLAN
 -------------------------------------------------------------------------------------
  Gather  (cost=1000.00..13906.10 rows=1 width=12)
    Workers Planned: 2
    ->  Parallel Seq Scan on d  (cost=0.00..12906.00 rows=1 width=12)
          Filter: ((id >= '1'::double precision) AND (id <= '100'::double precision))
-```
-
-TupleQueue
-
-max_parallel_workers: total number of workers
-max_parallel_workers_per_gather: maximum number of Worker processes
-
-The optimizer does not always consider a parallel query. It considers parallel execution only when the size of the table to be scanned is greater than or equal to min_parallel_table_scan_size (default: 8 MB), or if the index size is greater than or equal to min_parallel_index_scan_size (default: 512 kB).
-
-```c
-int			max_parallel_workers_per_gather = 2;
 ```
 
 ## Plan
@@ -45,7 +38,7 @@ grouping_planner
 				create_seqscan_path
 				create_plain_partial_paths
 					compute_parallel_worker
-						(heap_pages < min_parallel_table_scan_size && 
+						(heap_pages < min_parallel_table_scan_size &&
 						 index_pages < min_parallel_index_scan_size)
 					create_seqscan_path(root, rel, NULL, parallel_workers)
 						pathnode->parallel_workers = parallel_workers;
