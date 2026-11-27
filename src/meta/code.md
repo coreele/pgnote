@@ -1,11 +1,11 @@
 # Code
 
-代码仓库
+## Repos
 
-- pg 官方仓库：https://git.postgresql.org/git/postgresql.git
-- github 仓库：https://github.com/postgres/postgres.git
+- pg repo：https://git.postgresql.org/git/postgresql.git
+- github：https://github.com/postgres/postgres.git
 
-代码目录
+## Dirs
 
 ```text
 .
@@ -40,7 +40,7 @@
 └── utils 存放通用工具模块，如内存分配、错误处理、日期时间处理等辅助功能
 ```
 
-核心目录
+## Main
 
 ```
 .

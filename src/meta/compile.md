@@ -2,7 +2,7 @@
 
 > 基于 macOS 15.4.1
 
-## 源码获取
+## Clone
 
 - pg 官方仓库：https://git.postgresql.org/git/postgresql.git
 - github 仓库：https://github.com/postgres/postgres.git
@@ -14,14 +14,14 @@ cd postgresql
 git checkout REL_16_11
 ```
 
-## 版本规则
+## Version
 
 - PG 版本维护规则：https://www.postgresql.org/support/versioning/
 - 发布版命名规则：`REL_<主版本>_<维护版本>`
 - REL_16_11 处于 16 主版本的「稳定维护阶段」
 - 更新频率：每年发布一个主版本（15→16→17→18），每 1-2 个月发布一个维护版本（如 16_1→16_2→…→16_11）
 
-## 源码编译
+## Make
 
 ```sh
 cd postgres
@@ -34,7 +34,7 @@ make install
 # cp ./src/backend/postgres ~/app/pgdebug/bin/postgres
 ```
 
-## 初始化
+## Init
 
 ```sh
 cd ~/app/pgdebug/bin
@@ -44,7 +44,7 @@ cd ~/app/pgdebug/bin
 - PostgreSQL 中初始化数据库集群（Database Cluster） 的核心命令
 - 在指定目录 `~/pgdata` 中创建 PostgreSQL 运行所需的基础目录结构、系统表、配置文件
 
-## 启动和停止
+## Control
 
 ```sh
 cd ~/app/pgdebug/bin
@@ -56,9 +56,9 @@ cd ~/app/pgdebug/bin
 ./pg_ctl restart -D ~/pgdata -l ~/pgdebug.log
 ```
 
-## 连接
+## Connect
 
-配置客户端访问 pg_hba.conf
+配置客户端访问 `pg_hba.conf`
 
 ```conf
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
@@ -82,7 +82,9 @@ psql -U postgres -d postgres -h 127.0.0.1 -p 5432
 select pg_backend_pid();
 ```
 
-## vscode 配置调试
+## Debug
+
+vscode 配置调试
 
 ```json
 {

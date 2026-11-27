@@ -54,7 +54,7 @@ pg_waldump -s <redo_anchor> -n 20 -p $PGDATA/pg_wal
 
 ## gdb
 
-redo 在 Startup，不在 postmaster / backend。需 `-g` 构建（[Compile](../meta/02_compile.md)）。
+redo 在 Startup，不在 postmaster / backend。需 `-g` 构建（[Compile](../meta/compile.md)）。
 
 造数（可选）attach backend：`break heap_insert` / `XLogFlush`，跑完上节 SQL 后 `kill -9` postmaster。
 

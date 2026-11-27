@@ -6,14 +6,14 @@
 
 # Meta
 
-- [Architecture](./meta/00_arch.md)
-- [Code Structure](./meta/01_code.md)
-- [Compile](./meta/02_compile.md)
-- [Boot](./meta/03_boot.md)
+- [Architecture](./meta/arch.md)
+- [Code Structure](./meta/code.md)
+- [Compile](./meta/compile.md)
+- [Boot](./meta/boot.md)
 
 ---
 
-# backend
+# Backend
 
 - [tcop](./backend/tcop/tcop.md)
   - [Overview](./backend/tcop/00_overview.md)
